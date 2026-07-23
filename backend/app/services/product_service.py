@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
-from app.repositories import product_repository
+from app.repositories import product_repository, category_repository
 from app.schemas.product import ProductCreate
 
 
@@ -23,16 +23,21 @@ def get_product_by_id(db: Session, product_id: int) -> Product:
 
 
 def create_product(db: Session, product_data: ProductCreate):
+    category_id=product_data.category_id
+    category = category_repository.get_by_id(db, category_id)
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
 
     new_product = Product(
         name=product_data.name,
-        category=product_data.category,
+        category_id=product_data.category_id,
         description=product_data.description,
         price=product_data.price,
         stock=product_data.stock,
     )
-    
-
     return product_repository.create(db, new_product)
 
 def update_product(db:Session, product_id:int, product_data: ProductCreate):

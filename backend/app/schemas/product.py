@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class ProductCreate(BaseModel):
     name: str
     description: str | None = None
-    category: str
+    category_id: int
     price: float
     stock: int
 

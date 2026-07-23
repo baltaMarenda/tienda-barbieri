@@ -10,6 +10,7 @@ from app.db.deps import get_db
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductResponse
 from app.api.products import router as product_router
+from app.api.categories import router as category_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -32,3 +33,4 @@ def test_db():
         }
     
 app.include_router(product_router)
+app.include_router(category_router)
