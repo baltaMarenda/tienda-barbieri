@@ -1,16 +1,12 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
 from app.db.database import engine
 from app.db.database import engine, Base
-from app.models.product import Product
-from fastapi import Depends
-from sqlalchemy.orm import Session
 
-from app.db.deps import get_db
-from app.models.product import Product
-from app.schemas.product import ProductCreate, ProductResponse
+
+
 from app.api.products import router as product_router
 from app.api.categories import router as category_router
+from app.api.images import router as image_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,3 +30,4 @@ def test_db():
     
 app.include_router(product_router)
 app.include_router(category_router)
+app.include_router(image_router)

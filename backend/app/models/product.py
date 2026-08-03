@@ -20,6 +20,10 @@ class Product(Base):
         "Category",
         back_populates="products"
     )
+    images = relationship(
+        "Image",
+        back_populates="images"
+    )
 
 class ProductCreate(BaseModel):
     name:str
