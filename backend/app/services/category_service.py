@@ -47,5 +47,12 @@ def delete_category(db:Session, category_id:int):
             status_code=404,
             detail="Category not found"
         )
+
+    if category.products:
+        raise HTTPException(
+            status_code=409,
+            detail="Category has products assigned"
+        )
+
     return category_repository.delete(db, category)
 

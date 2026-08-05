@@ -1,12 +1,9 @@
 from fastapi import FastAPI
-from app.db.database import engine
 from app.db.database import engine, Base
-
-
-
 from app.api.products import router as product_router
 from app.api.categories import router as category_router
 from app.api.images import router as image_router
+from app.api.user import router as user_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,3 +28,4 @@ def test_db():
 app.include_router(product_router)
 app.include_router(category_router)
 app.include_router(image_router)
+app.include_router(user_router)

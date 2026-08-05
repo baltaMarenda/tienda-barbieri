@@ -21,9 +21,9 @@ async def get_image_by_id(id:int, db:Session = Depends(get_db)):
 
 @router.put("/{id}", response_model=ImageResponse)
 async def update(id: int, image: ImageCreate, db: Session = Depends(get_db)):
-    return image_service.update_product(db, id, image)
+    return image_service.update_image(db, id, image)
 
 @router.delete("/{id}", response_model=ImageResponse)
 async def delete(id: int, db: Session = Depends(get_db)):
-    return image_service.delete_product(db, id)
+    return image_service.delete_image(db, id)
   
