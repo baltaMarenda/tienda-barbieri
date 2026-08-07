@@ -23,3 +23,6 @@ def delete(db: Session, user: User):
     db.delete(user)
     db.commit()
     return user
+
+def get_by_email(db: Session, email: str):
+    return db.query(User).filter_by(email=email).first()

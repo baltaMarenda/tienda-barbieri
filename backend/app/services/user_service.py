@@ -5,6 +5,8 @@ from app.models.user import User
 from app.repositories import user_repository
 from app.schemas.user import UserCreate
 
+from app.core.security import hash_password
+
 def get_all_users(db:Session):
     return user_repository.get_all(db)
 
@@ -37,7 +39,7 @@ def create_user(db:Session, user_data:UserCreate):
     new_user = User (
         name = user_data.name,
         email = user_data.email,
-        password_hash = user_data.password,
+        password_hash = hash_password(user_data.password),
         role = "customer",
         is_active = True,
     )
@@ -56,3 +58,13 @@ def delete_user(db:Session, user_id:int):
 
     return user_repository.delete(db, user)
 
+def get_user_by_email(db: Session, email: str):
+    user = user_repository.get_by_email(db, email)
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return user

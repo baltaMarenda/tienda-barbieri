@@ -1,12 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ProductCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
     description: str | None = None
-    category_id: int
-    price: float
-    stock: int
+    category_id: int = Field(gt=0)
+    price: float = Field(ge=0)
+    stock: int = Field(ge=0)
 
 
 class ProductResponse(ProductCreate):
@@ -14,3 +14,5 @@ class ProductResponse(ProductCreate):
 
     class Config:
         from_attributes = True
+
+
