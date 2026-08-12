@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-
+from fastapi import Query
 
 class ProductCreate(BaseModel):
     name: str = Field(min_length=1)
@@ -24,7 +24,7 @@ class ProductUpdate(BaseModel):
 
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]
-    page: int
-    limit: int
+    page: int = Query(1, ge=1)
+    limit: int = Query(20, ge=1, le=100)
     total: int
     pages: int
