@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
-from app.schemas.category import CategoryCreate, CategoryResponse
+from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
 from app.services import category_service
 from app.models.user import User
 from app.core.auth import get_current_admin
@@ -24,7 +24,7 @@ async def get_by_id(id: int, db:Session = Depends(get_db)):
     return category_service.get_category_by_id(db, id)
 
 @router.put("/{id}", response_model=CategoryResponse)
-async def update(id: int, category_data:CategoryCreate, db:Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
+async def update(id: int, category_data:CategoryUpdate, db:Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
     return category_service.update_category(db, id, category_data)
 
 @router.delete("/{id}", response_model=CategoryResponse)

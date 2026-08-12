@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.image import Image
 from app.repositories import image_repository, product_repository
-from app.schemas.image import ImageCreate
+from app.schemas.image import ImageCreate, ImageUpdate
 
 def get_all_images(db:Session):
     return image_repository.get_all(db)
@@ -38,7 +38,7 @@ def create_image(db:Session, image_data: ImageCreate):
 
     return image_repository.create(db, new_image)
 
-def update_image(db:Session, image_id:int, image_data:ImageCreate):
+def update_image(db:Session, image_id:int, image_data:ImageUpdate):
     image = image_repository.get_by_id(db, image_id)
 
     if image is None:
@@ -55,7 +55,7 @@ def update_image(db:Session, image_id:int, image_data:ImageCreate):
             detail="Product not found"
     )
     
-    for key, value in image_data.model_dump().items():
+    for key, value in image_data.model_dump(exclude_unset=True).items():
         setattr(image, key, value)
 
     return image_repository.update(db, image)

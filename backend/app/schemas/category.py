@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CategoryCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
 
 
 class CategoryResponse(CategoryCreate):
@@ -10,3 +10,6 @@ class CategoryResponse(CategoryCreate):
 
     class Config:
         from_attributes = True
+
+class CategoryUpdate(BaseModel):
+    name: str = Field(min_length=1)

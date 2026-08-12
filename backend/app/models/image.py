@@ -7,7 +7,7 @@ class Image(Base):
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column (
         Integer,
-        ForeignKey("products.id"),
+        ForeignKey("products.id", ondelete="CASCADE"),
         nullable=False
     )
     url = Column(String, nullable=False)

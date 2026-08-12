@@ -15,4 +15,16 @@ class ProductResponse(ProductCreate):
     class Config:
         from_attributes = True
 
+class ProductUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1)
+    description: str | None = None
+    category_id: int | None = Field(default=None, gt=0)
+    price: float | None = Field(default=None, ge=0)
+    stock: int | None = Field(default=None, ge=0)
 
+class ProductListResponse(BaseModel):
+    items: list[ProductResponse]
+    page: int
+    limit: int
+    total: int
+    pages: int

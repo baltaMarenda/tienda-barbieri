@@ -26,3 +26,10 @@ def delete(db: Session, product: Product):
     db.commit()
     return product
 
+def get_paginated(db: Session, page: int, limit: int):
+    offset = (page - 1) * limit
+    query = db.query(Product)
+    total = query.count()
+    productos = query.offset(offset).limit(limit).all()
+
+    return productos, total
