@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Barbieri">
+  <mask id="barbieri-mark">
+    <rect width="100" height="100" rx="7" fill="#fff" />
+    <path d="M50 55 L69 74 V100 H31 V74 Z" fill="#000" />
+  </mask>
+  <rect width="100" height="100" rx="7" fill="#049EE3" mask="url(#barbieri-mark)" />
+</svg>

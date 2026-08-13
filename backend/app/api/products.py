@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
@@ -16,9 +16,19 @@ async def create_products( product: ProductCreate, db: Session = Depends(get_db)
 
 
 @router.get("/", response_model=ProductListResponse)
-async def get_products(page: int = 1, limit:int = 20, db: Session = Depends(get_db)):
-    return product_service.get_products_paginated(db, page, limit)
-
+async def get_products(page: int = Query(1, ge=1), 
+                       limit: int = Query(20, ge=1, le=100), 
+                       db: Session = Depends(get_db), 
+                       sort: str | None = Query(default=None),
+                       category_id: int | None = Query(default=None, gt=0), 
+                       search:str | None = Query(default=None, min_length=1)
+                       ):
+    return product_service.get_products_paginated(
+        db, page, limit,
+        sort = sort,
+        category_id=category_id,
+        search=search,
+    )
 
 @router.get("/{id}", response_model=ProductResponse)
 async def get_product_by_id(id: int, db: Session = Depends(get_db)):

@@ -26,9 +26,19 @@ def delete(db: Session, product: Product):
     db.commit()
     return product
 
-def get_paginated(db: Session, page: int, limit: int):
+def get_paginated(db: Session, page: int, limit: int, sort: str | None = None,category_id:int | None = None, search: str | None = None):
     offset = (page - 1) * limit
     query = db.query(Product)
+
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+    if search:
+        query = query.filter(Product.name.ilike(f"%{search}%"))
+    if sort == "price_asc":
+        query = query.order_by(Product.price.asc())
+    elif sort == "price_desc":
+        query = query.order_by(Product.price.desc())
+
     total = query.count()
     productos = query.offset(offset).limit(limit).all()
 

@@ -50,16 +50,17 @@ def update_product(db: Session, product_id: int, product_data: ProductUpdate):
             detail="Product not found"
         )
 
-    category = category_repository.get_by_id(
-        db,
-        product_data.category_id
-    )
-
-    if category is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Category not found"
+    if product_data.category_id is not None:
+        category = category_repository.get_by_id(
+            db,
+            product_data.category_id
         )
+
+        if category is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found"
+            )   
 
     for key, value in product_data.model_dump(exclude_unset=True).items():
         setattr(product, key, value)
@@ -76,8 +77,13 @@ def delete_product(db:Session, product_id:int):
         )
     return product_repository.delete(db, product)
 
-def get_products_paginated(db: Session, page: int, limit: int):
-    productos, total = product_repository.get_paginated(db, page, limit)
+def get_products_paginated(db: Session, page: int, limit: int,sort: str | None = None, category_id:int | None = None, search:str | None = None):
+    productos, total = product_repository.get_paginated(
+        db, page, limit,
+        sort=sort,
+        category_id=category_id,
+        search=search,
+    )
 
     pages = math.ceil(total / limit)
 

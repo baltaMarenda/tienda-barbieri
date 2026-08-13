@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/baltazarmarenda/.claude/**)",
+      "Read(//Users/baltazarmarenda/.claude/plugins/**)",
+      "Bash(export CLAUDE_PLUGIN_ROOT=/private/tmp/claude-501/-Users-baltazarmarenda-Downloads-tienda-barbieri/4fb0accc-c4d7-4be4-a439-48446ad1c8ff/scratchpad/ui-ux-pro-max-skill)",
+      "Bash(python3 /private/tmp/claude-501/-Users-baltazarmarenda-Downloads-tienda-barbieri/4fb0accc-c4d7-4be4-a439-48446ad1c8ff/scratchpad/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/scripts/search.py 'e-commerce construction materials hardware building supplies trustworthy industrial blue' --design-system -p Barbieri --variance 4 --motion 4 --density 5)",
+      "Bash(npm -v)",
+      "Bash(python3 -c ' *)",
+      "Bash(npm install *)",
+      "Bash(cp /Users/baltazarmarenda/Downloads/logo-barbieri.jpg public/logo-barbieri.jpg)",
+      "Bash(mkdir -p src/styles src/lib src/context src/components/layout src/components/ui src/components/product src/pages/admin)",
+      "Bash(rm -f src/components/ProductCard.tsx src/.DS_Store)",
+      "Bash(sips -c 220 900 --cropOffset 430 90 logo-barbieri.jpg --out logo-barbieri.png -s format png)",
+      "Bash(sips -g pixelWidth -g pixelHeight logo-barbieri.png)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{for\\(const f of JSON.parse\\(s\\)\\){for\\(const m of f.messages\\){console.log\\(f.filePath.replace\\(/.*frontend\\\\//,''\\)+':'+m.line+':'+m.column+'  '+m.ruleId\\)}}}\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{let n=0;for\\(const f of JSON.parse\\(s\\)\\){for\\(const m of f.messages\\){n++;console.log\\(f.filePath.replace\\(/.*frontend\\\\//,''\\)+':'+m.line+':'+m.column+'  '+m.ruleId+'  '+m.message.split\\('\\\\n'\\)[0]\\)}}console.log\\('total:',n\\)}\\)\")",
+      "Bash(lsof -nP -iTCP:5173 -iTCP:8000 -sTCP:LISTEN)",
+      "Bash(curl -s -m 5 http://localhost:8000/)",
+      "Bash(curl -s -m 5 \"http://localhost:8000/products/?page=1&limit=3\")",
+      "Bash(curl -s -m 5 http://localhost:8000/categories/)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -m 5 http://localhost:5173/)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/users/)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"HTTP %{http_code}\\\\n\" -X POST -H 'Content-Type: application/json' -d '{\"name\":\"x\",\"category_id\":4,\"price\":1,\"stock\":1}' http://localhost:8000/products/)",
+      "Bash(lsof -nP -iTCP:5174 -sTCP:LISTEN -t)",
+      "Bash(xargs -r kill)",
+      "Bash(lsof -nP -iTCP:5174 -sTCP:LISTEN)",
+      "Bash(awk 'NR>1{print $1, $9}')",
+      "Bash(python3 -)"
+    ]
+  }
+}

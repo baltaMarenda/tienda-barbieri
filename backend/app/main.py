@@ -1,5 +1,9 @@
 from fastapi import FastAPI
+
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.db.database import engine, Base
+
 from app.api.products import router as product_router
 from app.api.categories import router as category_router
 from app.api.images import router as image_router
@@ -9,6 +13,14 @@ from app.api.auth import router as auth_router
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
