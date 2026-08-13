@@ -1,0 +1,15 @@
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/components.css";
+@import "./styles/layout.css";
+
+/* El layout de la app: header sticky, contenido flexible, footer siempre abajo. */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+#root > main {
+  flex: 1;
+}
