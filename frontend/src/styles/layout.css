@@ -1076,3 +1076,33 @@
     display: inline;
   }
 }
+
+/* --- Botón flotante de WhatsApp ------------------------------------------------ */
+
+.bb-whatsapp {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-float);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  color: #fff;
+  background: #25d366;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    transform var(--duration-fast) var(--ease);
+}
+
+.bb-whatsapp:hover {
+  background: #1ebe5a;
+  transform: scale(1.05);
+}
+
+.bb-whatsapp:focus-visible {
+  outline-offset: 3px;
+}

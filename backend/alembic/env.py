@@ -4,14 +4,22 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from os import getenv
+from dotenv import load_dotenv
 
 from app.db.database import Base
 from app.models.product import Product
 from app.models.category import Category
+from app.models.image import Image
+from app.models.user import User
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Las migraciones usan la conexión directa (no pooled) de Neon.
+load_dotenv()
+config.set_main_option("sqlalchemy.url", getenv("DATABASE_URL").replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

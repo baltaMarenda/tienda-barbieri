@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { CartDrawer } from "./CartDrawer";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
+import { WhatsAppButton } from "./WhatsAppButton";
 
 export function Layout() {
   const { pathname } = useLocation();
@@ -26,6 +27,7 @@ export function Layout() {
       </main>
 
       <Footer />
+      <WhatsAppButton />
       <CartDrawer />
     </>
   );

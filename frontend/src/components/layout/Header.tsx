@@ -54,7 +54,7 @@ export function Header() {
         <div className="bb-container bb-header__topbar-inner">
           <span className="bb-header__topbar-item">
             <Icon name="truck" size={14} />
-            Asesoramiento técnico y entrega en obra
+            Asesoramiento técnico y entregas a domicilio en Chivilcoy y la zona
           </span>
 
           <ul className="bb-header__topbar-list">

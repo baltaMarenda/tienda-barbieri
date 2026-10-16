@@ -129,6 +129,7 @@
 
   --header-height: 72px;
   --z-header: 100;
+  --z-float: 150;
   --z-overlay: 200;
   --z-drawer: 210;
   --z-toast: 300;

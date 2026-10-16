@@ -93,7 +93,7 @@ function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
     <Modal
       open
       onClose={onClose}
-      title={image ? `Editar imagen #${image.id}` : "Nueva imagen"}
+      title={image ? "Editar imagen" : "Nueva imagen"}
       footer={
         <>
           <button

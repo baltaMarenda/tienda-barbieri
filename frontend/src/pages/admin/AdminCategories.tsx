@@ -58,7 +58,7 @@ function CategoryForm({ category, onClose, onSaved }: CategoryFormProps) {
     <Modal
       open
       onClose={onClose}
-      title={category ? `Editar rubro #${category.id}` : "Nuevo rubro"}
+      title={category ? `Editar rubro “${category.name}”` : "Nuevo rubro"}
       footer={
         <>
           <button
@@ -205,9 +205,9 @@ export function AdminCategories() {
               </tr>
             </thead>
             <tbody>
-              {categories.map((category) => (
+              {categories.map((category, index) => (
                 <tr key={category.id}>
-                  <td className="bb-muted">{category.id}</td>
+                  <td className="bb-muted">{index + 1}</td>
                   <td>
                     <strong>{category.name}</strong>
                   </td>

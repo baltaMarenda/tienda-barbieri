@@ -112,7 +112,7 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
     <Modal
       open
       onClose={onClose}
-      title={product ? `Editar producto #${product.id}` : "Nuevo producto"}
+      title={product ? `Editar producto “${product.name}”` : "Nuevo producto"}
       footer={
         <>
           <button
@@ -358,9 +358,9 @@ export function AdminProducts() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <tr key={product.id}>
-                    <td className="bb-muted">{product.id}</td>
+                    <td className="bb-muted">{(page - 1) * PAGE_SIZE + index + 1}</td>
                     <td style={{ whiteSpace: "normal", maxWidth: 320 }}>
                       <strong>{product.name}</strong>
                     </td>
