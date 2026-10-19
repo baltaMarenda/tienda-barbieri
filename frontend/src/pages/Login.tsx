@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { Alert, Spinner } from "../components/ui/Feedback";
 import { TextField } from "../components/ui/Field";
@@ -8,27 +8,14 @@ import { Icon } from "../components/ui/Icon";
 import { Logo } from "../components/ui/Logo";
 import { useAuth } from "../hooks/useAuth";
 
-interface LocationState {
-  from?: string;
-}
-
+/** Formulario de ingreso al panel; lo renderiza RequireAdmin en /admin. */
 export function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { signIn, status, isAdmin } = useAuth();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const from = (location.state as LocationState | null)?.from;
-
-  /* Si ya hay sesión, esta página no tiene sentido. */
-  useEffect(() => {
-    if (status !== "authenticated") return;
-    navigate(from ?? (isAdmin ? "/admin" : "/"), { replace: true });
-  }, [status, isAdmin, from, navigate]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -36,8 +23,8 @@ export function Login() {
     setSubmitting(true);
 
     try {
-      const user = await signIn(email.trim(), password);
-      navigate(from ?? (user.role === "admin" ? "/admin" : "/"), { replace: true });
+      // Al quedar autenticado, RequireAdmin deja de mostrar este formulario.
+      await signIn(email.trim(), password);
     } catch (cause: unknown) {
       // El backend devuelve el mismo 401 para mail y contraseña, a propósito.
       setError(

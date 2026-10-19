@@ -1,15 +1,16 @@
-import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
 import { useAuth } from "../hooks/useAuth";
+import { Login } from "../pages/Login";
 import { Alert, Spinner } from "./ui/Feedback";
 
 /**
  * Guarda de las rutas /admin. La autorización real la hace el backend con
  * `get_current_admin`; esto sólo evita mostrar una pantalla que igual fallaría.
+ * Sin sesión muestra el formulario de ingreso: es el único punto de acceso.
  */
 export function RequireAdmin() {
   const { status, isAdmin } = useAuth();
-  const location = useLocation();
 
   if (status === "loading") {
     return (
@@ -20,7 +21,7 @@ export function RequireAdmin() {
   }
 
   if (status === "anonymous") {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Login />;
   }
 
   if (!isAdmin) {

@@ -9,7 +9,6 @@ import { AdminProducts } from "./pages/admin/AdminProducts";
 import { Catalog } from "./pages/Catalog";
 import { Contact } from "./pages/Contact";
 import { Home } from "./pages/Home";
-import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
 import { ProductDetail } from "./pages/ProductDetail";
 
@@ -21,7 +20,6 @@ export default function App() {
         <Route path="productos" element={<Catalog />} />
         <Route path="productos/:id" element={<ProductDetail />} />
         <Route path="contacto" element={<Contact />} />
-        <Route path="login" element={<Login />} />
 
         <Route element={<RequireAdmin />}>
           <Route path="admin" element={<AdminLayout />}>

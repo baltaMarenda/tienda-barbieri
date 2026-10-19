@@ -113,11 +113,7 @@ export function Header() {
             >
               <Icon name="log-out" />
             </button>
-          ) : (
-            <NavLink to="/login" className="bb-icon-btn" aria-label="Iniciar sesión">
-              <Icon name="user" />
-            </NavLink>
-          )}
+          ) : null}
 
           <button
             type="button"
