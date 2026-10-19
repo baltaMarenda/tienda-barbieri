@@ -20,6 +20,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    # Antes app/main.py hacía `Base.metadata.create_all` y en Neon las tablas se
+    # crearon al levantar la app, sin migrar: en ese caso sólo se registra la revisión.
+    existing = set(sa.inspect(op.get_bind()).get_table_names())
+
+    if 'orders' not in existing:
+        _create_orders()
+    if 'order_items' not in existing:
+        _create_order_items()
+
+
+def _create_orders() -> None:
     op.create_table(
         'orders',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -36,6 +47,8 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_orders_id'), 'orders', ['id'], unique=False)
 
+
+def _create_order_items() -> None:
     op.create_table(
         'order_items',
         sa.Column('id', sa.Integer(), nullable=False),

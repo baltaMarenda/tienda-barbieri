@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.db.database import engine, Base
+from app.db.database import engine
 
 from app.api.products import router as product_router
 from app.api.categories import router as category_router
@@ -15,8 +15,6 @@ from app.api.user import router as user_router
 from app.api.auth import router as auth_router
 from app.api.orders import router as order_router
 from app.core.media import MEDIA_DIR, MEDIA_URL_PREFIX, ensure_media_dir
-
-Base.metadata.create_all(bind=engine)
 
 load_dotenv()
 
