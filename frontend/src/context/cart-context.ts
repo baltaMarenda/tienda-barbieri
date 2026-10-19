@@ -3,7 +3,7 @@ import type { CartLine, Product } from "../types";
 
 export interface CartContextValue {
   lines: CartLine[];
-  /** Unidades totales (suma de cantidades). */
+  /** Suma de cantidades (unidades, cajas o m², según cada línea). */
   count: number;
   /** Productos distintos. */
   distinctCount: number;

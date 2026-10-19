@@ -85,8 +85,10 @@ export async function request<T>(
 ): Promise<T> {
   const { method = "GET", body, auth = false, signal } = options;
 
+  // Con FormData el navegador arma el Content-Type multipart con su boundary.
+  const isForm = body instanceof FormData;
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
 
   if (auth) {
     const token = getToken();
@@ -99,7 +101,7 @@ export async function request<T>(
       method,
       headers,
       signal,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
@@ -130,6 +132,14 @@ export async function request<T>(
   }
 
   return payload as T;
+}
+
+/**
+ * Las imágenes subidas se guardan en el backend y llegan como ruta relativa
+ * ("/media/products/…"); las cargadas antes como link quedan absolutas.
+ */
+export function mediaUrl(url: string): string {
+  return url.startsWith("/") ? `${API_URL}${url}` : url;
 }
 
 /** Arma un query string omitiendo null, undefined y strings vacíos. */

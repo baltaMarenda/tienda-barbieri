@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
+import { mediaUrl } from "../../api/client";
+import { deleteImage, getAllImages, invalidateImagesCache, uploadImages } from "../../api/images";
 import { createProduct, deleteProduct, updateProduct } from "../../api/products";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Modal } from "../../components/ui/Dialog";
@@ -11,10 +13,13 @@ import { Pagination } from "../../components/ui/Pagination";
 import { SearchInput } from "../../components/ui/SearchInput";
 import { useCategories } from "../../hooks/useCategories";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import { usePendingImages } from "../../hooks/usePendingImages";
+import type { PendingImage } from "../../hooks/usePendingImages";
 import { useProducts } from "../../hooks/useProducts";
 import { useToast } from "../../hooks/useToast";
-import { formatNumber, formatPrice } from "../../lib/format";
-import type { Category, Product, ProductPayload } from "../../types";
+import { formatNumber } from "../../lib/format";
+import { formatQuantity, formatUnitPrice, isCeramicCategory } from "../../lib/units";
+import type { Category, Product, ProductImage, ProductPayload, SaleUnit } from "../../types";
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +29,7 @@ interface ProductFormProps {
   product: Product | null;
   categories: Category[];
   onClose: () => void;
-  onSaved: (message: string) => void;
+  onSaved: (message: string, tone?: "success" | "error") => void;
 }
 
 interface FieldErrors {
@@ -32,6 +37,127 @@ interface FieldErrors {
   category_id?: string;
   price?: string;
   stock?: string;
+  m2_per_box?: string;
+  images?: string;
+}
+
+const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif";
+/** Mismo tope que el backend (app/core/media.py). */
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+
+/**
+ * Imágenes del formulario: las ya guardadas (que se pueden marcar para borrar)
+ * y las nuevas elegidas del disco. Nada se envía hasta que se guarda el
+ * producto, así "Cancelar" no deja cambios a medias.
+ */
+function ImagePicker({
+  existing,
+  removed,
+  onToggleRemoved,
+  pending,
+  onAdd,
+  onRemovePending,
+  loading,
+  error,
+}: {
+  existing: ProductImage[];
+  removed: Set<number>;
+  onToggleRemoved: (id: number) => void;
+  pending: PendingImage[];
+  onAdd: (files: File[]) => void;
+  onRemovePending: (index: number) => void;
+  loading: boolean;
+  error?: string;
+}) {
+  const kept = existing.filter((image) => !removed.has(image.id));
+
+  return (
+    <div className="bb-field">
+      <span className="bb-label">
+        Imágenes <span className="bb-label__optional"> (opcional)</span>
+      </span>
+
+      {loading ? (
+        <Spinner />
+      ) : (
+        <ul className="bb-image-picker">
+          {existing.map((image) => {
+            const isRemoved = removed.has(image.id);
+            return (
+              <li
+                key={`saved-${image.id}`}
+                className="bb-image-picker__item"
+                data-removed={isRemoved || undefined}
+              >
+                <img src={mediaUrl(image.url)} alt={image.alt} loading="lazy" decoding="async" />
+                {kept[0]?.id === image.id ? (
+                  <span className="bb-image-picker__tag">Principal</span>
+                ) : null}
+                <button
+                  type="button"
+                  className="bb-icon-btn bb-image-picker__action"
+                  onClick={() => onToggleRemoved(image.id)}
+                  aria-label={isRemoved ? "Conservar imagen" : "Quitar imagen"}
+                  title={isRemoved ? "Conservar" : "Quitar"}
+                >
+                  <Icon name={isRemoved ? "refresh" : "trash"} size={16} />
+                </button>
+              </li>
+            );
+          })}
+
+          {pending.map((item, index) => (
+            <li key={item.preview} className="bb-image-picker__item">
+              <img src={item.preview} alt={`Nueva imagen: ${item.file.name}`} />
+              {kept.length === 0 && index === 0 ? (
+                <span className="bb-image-picker__tag">Principal</span>
+              ) : (
+                <span className="bb-image-picker__tag bb-image-picker__tag--new">Nueva</span>
+              )}
+              <button
+                type="button"
+                className="bb-icon-btn bb-image-picker__action"
+                onClick={() => onRemovePending(index)}
+                aria-label={`Descartar ${item.file.name}`}
+                title="Descartar"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </li>
+          ))}
+
+          <li>
+            <label className="bb-image-picker__add">
+              <Icon name="plus" size={22} />
+              <span>Agregar</span>
+              <input
+                type="file"
+                accept={ACCEPTED_IMAGES}
+                multiple
+                className="bb-sr-only"
+                onChange={(event) => {
+                  onAdd(Array.from(event.target.files ?? []));
+                  event.target.value = ""; // permite volver a elegir el mismo archivo
+                }}
+              />
+            </label>
+          </li>
+        </ul>
+      )}
+
+      {error ? (
+        <span className="bb-error">
+          <Icon name="alert-circle" size={16} />
+          {error}
+        </span>
+      ) : (
+        <span className="bb-hint">
+          JPG, PNG o WebP de hasta 15 MB. Se comprimen al guardar. La primera es la que
+          se ve en el catálogo.
+        </span>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -47,9 +173,96 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
   );
   const [price, setPrice] = useState(product ? String(product.price) : "");
   const [stock, setStock] = useState(product ? String(product.stock) : "");
+  const [priceUnit, setPriceUnit] = useState<SaleUnit>(product?.price_unit ?? "unit");
+  const [stockUnit, setStockUnit] = useState<SaleUnit>(product?.stock_unit ?? "unit");
+  const [m2PerBox, setM2PerBox] = useState(
+    product?.m2_per_box ? String(product.m2_per_box) : "",
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(product !== null);
+  const [removedImages, setRemovedImages] = useState<Set<number>>(() => new Set());
+  const {
+    pending: pendingImages,
+    add: addPendingImages,
+    remove: removePendingImage,
+  } = usePendingImages();
+
+  const selectedCategory = categories.find((category) => String(category.id) === categoryId);
+  const ceramic = isCeramicCategory(selectedCategory?.name);
+  /* Fuera de los rubros cerámicos todo se maneja por unidad, sin importar lo
+     que haya quedado elegido antes de cambiar de rubro. */
+  const effectivePriceUnit: SaleUnit = ceramic ? priceUnit : "unit";
+  const effectiveStockUnit: SaleUnit = ceramic ? stockUnit : "unit";
+  const unitsDiffer = effectivePriceUnit !== effectiveStockUnit;
+
+  /* GET /images/ no filtra por producto: se trae todo y se filtra acá. */
+  useEffect(() => {
+    if (!product) return;
+    let active = true;
+    invalidateImagesCache();
+
+    getAllImages()
+      .then((images) => {
+        if (!active) return;
+        setExistingImages(
+          images
+            .filter((image) => image.product_id === product.id)
+            .sort((a, b) => a.order - b.order),
+        );
+      })
+      .catch(() => {
+        if (active) setErrors((current) => ({ ...current, images: "No pudimos cargar las imágenes actuales." }));
+      })
+      .finally(() => {
+        if (active) setImagesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product]);
+
+  function onCategoryChange(value: string) {
+    setCategoryId(value);
+    const next = categories.find((category) => String(category.id) === value);
+    // Al pasar a un rubro cerámico se sugiere lo habitual: precio por m², stock en cajas.
+    if (isCeramicCategory(next?.name) && priceUnit === "unit" && stockUnit === "unit") {
+      setPriceUnit("m2");
+      setStockUnit("box");
+    }
+  }
+
+  function addImages(files: File[]) {
+    const tooBig = files.filter((file) => file.size > MAX_IMAGE_BYTES);
+    const valid = files.filter(
+      (file) => file.size <= MAX_IMAGE_BYTES && file.type.startsWith("image/"),
+    );
+
+    setErrors((current) => ({
+      ...current,
+      images:
+        tooBig.length > 0
+          ? `${tooBig.map((file) => file.name).join(", ")} supera los 15 MB.`
+          : valid.length < files.length
+            ? "Algunos archivos no son imágenes y se descartaron."
+            : undefined,
+    }));
+
+    addPendingImages(valid);
+  }
+
+  function toggleRemovedImage(id: number) {
+    setRemovedImages((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function validate(): FieldErrors {
     const found: FieldErrors = {};
@@ -67,8 +280,22 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
     const stockValue = Number(stock);
     if (stock.trim() === "" || Number.isNaN(stockValue)) {
       found.stock = "Ingresá el stock disponible.";
-    } else if (!Number.isInteger(stockValue) || stockValue < 0) {
-      found.stock = "El stock debe ser un entero de 0 o más.";
+    } else if (stockValue < 0) {
+      found.stock = "El stock no puede ser negativo.";
+    } else if (effectiveStockUnit !== "m2" && !Number.isInteger(stockValue)) {
+      // Sólo los m² admiten decimales; unidades y cajas se cuentan enteras.
+      found.stock = `El stock en ${effectiveStockUnit === "box" ? "cajas" : "unidades"} debe ser un número entero.`;
+    }
+
+    if (ceramic) {
+      const m2Value = Number(m2PerBox);
+      if (m2PerBox.trim() === "") {
+        if (unitsDiffer) {
+          found.m2_per_box = "Indicá cuántos m² trae cada caja para convertir precio y stock.";
+        }
+      } else if (Number.isNaN(m2Value) || m2Value <= 0) {
+        found.m2_per_box = "Ingresá un valor mayor a 0.";
+      }
     }
 
     return found;
@@ -79,33 +306,59 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
 
     const found = validate();
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.values(found).some(Boolean)) return;
 
     const payload: ProductPayload = {
       name: name.trim(),
       description: description.trim() === "" ? null : description.trim(),
       category_id: Number(categoryId),
       price: Number(price),
+      price_unit: effectivePriceUnit,
       stock: Number(stock),
+      stock_unit: effectiveStockUnit,
+      m2_per_box: ceramic && m2PerBox.trim() !== "" ? Number(m2PerBox) : null,
     };
 
     setSaving(true);
     setFormError(null);
 
+    let saved: Product;
     try {
-      if (product) {
-        await updateProduct(product.id, payload);
-        onSaved(`Se actualizó “${payload.name}”.`);
-      } else {
-        await createProduct(payload);
-        onSaved(`Se creó “${payload.name}”.`);
-      }
+      saved = product
+        ? await updateProduct(product.id, payload)
+        : await createProduct(payload);
     } catch (cause: unknown) {
       setFormError(
         cause instanceof Error ? cause.message : "No pudimos guardar el producto.",
       );
       setSaving(false);
+      return;
     }
+
+    const message = product
+      ? `Se actualizó “${payload.name}”.`
+      : `Se creó “${payload.name}”.`;
+
+    /* El producto ya quedó guardado: si fallan las imágenes se avisa, pero no
+       se reintenta desde este formulario (en un alta duplicaría el producto). */
+    try {
+      for (const id of removedImages) await deleteImage(id);
+      if (pendingImages.length > 0) {
+        await uploadImages(
+          saved.id,
+          pendingImages.map((item) => item.file),
+        );
+      }
+    } catch (cause: unknown) {
+      const detail = cause instanceof Error ? ` (${cause.message})` : "";
+      onSaved(
+        `${message} Pero no pudimos guardar todas las imágenes${detail}. Revisalas desde la sección Imágenes.`,
+        "error",
+      );
+      return;
+    }
+
+    onSaved(message);
   }
 
   return (
@@ -158,7 +411,7 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
           <SelectField
             label="Rubro"
             value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
+            onChange={(event) => onCategoryChange(event.target.value)}
             error={errors.category_id}
             required
           >
@@ -170,30 +423,113 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
             ))}
           </SelectField>
 
-          <TextField
-            label="Precio"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            error={errors.price}
-            required
-          />
+          {!ceramic ? (
+            <>
+              <TextField
+                label="Precio"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                error={errors.price}
+                required
+              />
 
-          <TextField
-            label="Stock"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step="1"
-            value={stock}
-            onChange={(event) => setStock(event.target.value)}
-            error={errors.stock}
-            required
-          />
+              <TextField
+                label="Stock"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step="1"
+                value={stock}
+                onChange={(event) => setStock(event.target.value)}
+                error={errors.stock}
+                required
+              />
+            </>
+          ) : null}
         </div>
+
+        {ceramic ? (
+          <fieldset className="bb-fieldset">
+            <legend className="bb-label">Venta por caja o por m²</legend>
+
+            <div className="bb-form-grid">
+              <TextField
+                label={priceUnit === "m2" ? "Precio por m²" : "Precio por caja"}
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                error={errors.price}
+                required
+              />
+
+              <SelectField
+                label="El precio es"
+                value={priceUnit}
+                onChange={(event) => setPriceUnit(event.target.value as SaleUnit)}
+              >
+                <option value="m2">Por metro cuadrado</option>
+                <option value="box">Por caja</option>
+              </SelectField>
+
+              <TextField
+                label={stockUnit === "m2" ? "Stock en m²" : "Stock en cajas"}
+                type="number"
+                inputMode={stockUnit === "m2" ? "decimal" : "numeric"}
+                min={0}
+                step={stockUnit === "m2" ? "0.01" : "1"}
+                value={stock}
+                onChange={(event) => setStock(event.target.value)}
+                error={errors.stock}
+                required
+              />
+
+              <SelectField
+                label="El stock se cuenta en"
+                value={stockUnit}
+                onChange={(event) => setStockUnit(event.target.value as SaleUnit)}
+              >
+                <option value="box">Cajas</option>
+                <option value="m2">Metros cuadrados</option>
+              </SelectField>
+
+              <TextField
+                label="m² por caja"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                value={m2PerBox}
+                onChange={(event) => setM2PerBox(event.target.value)}
+                error={errors.m2_per_box}
+                optional={!unitsDiffer}
+                required={unitsDiffer}
+                hint={
+                  unitsDiffer
+                    ? "Necesario para convertir entre cajas y m²."
+                    : "Si lo cargás, la tienda vende por cajas completas y muestra los m² que cubren."
+                }
+              />
+            </div>
+          </fieldset>
+        ) : null}
+
+        <ImagePicker
+          existing={existingImages}
+          removed={removedImages}
+          onToggleRemoved={toggleRemovedImage}
+          pending={pendingImages}
+          onAdd={addImages}
+          onRemovePending={removePendingImage}
+          loading={imagesLoading}
+          error={errors.images}
+        />
       </form>
     </Modal>
   );
@@ -232,9 +568,9 @@ export function AdminProducts() {
     setFormOpen(true);
   }
 
-  function onSaved(message: string) {
+  function onSaved(message: string, tone?: "success" | "error") {
     setFormOpen(false);
-    notify(message);
+    notify(message, tone);
     reload();
   }
 
@@ -365,8 +701,14 @@ export function AdminProducts() {
                       <strong>{product.name}</strong>
                     </td>
                     <td>{categoryById.get(product.category_id)?.name ?? "—"}</td>
-                    <td className="bb-table__num">{formatPrice(product.price)}</td>
-                    <td className="bb-table__num">{formatNumber(product.stock)}</td>
+                    <td className="bb-table__num">
+                      {formatUnitPrice(product.price, product.price_unit)}
+                    </td>
+                    <td className="bb-table__num">
+                      {product.stock_unit === "unit"
+                        ? formatNumber(product.stock)
+                        : formatQuantity(product.stock, product.stock_unit)}
+                    </td>
                     <td>
                       <div className="bb-table__actions">
                         <button

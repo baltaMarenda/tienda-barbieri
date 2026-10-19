@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
-import { formatPrice } from "../../lib/format";
+import { mediaUrl } from "../../api/client";
+import { formatUnitPrice, saleTerms } from "../../lib/units";
 import { useCart } from "../../hooks/useCart";
 import { Icon } from "../ui/Icon";
 import { StockBadge } from "./StockBadge";
@@ -15,7 +16,8 @@ interface ProductCardProps {
 export function ProductCard({ product, categoryName, image }: ProductCardProps) {
   const { add } = useCart();
   const href = `/productos/${product.id}`;
-  const outOfStock = product.stock <= 0;
+  const terms = saleTerms(product);
+  const outOfStock = terms.available <= 0;
 
   return (
     <article className="bb-product-card">
@@ -24,7 +26,7 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
         {image ? (
           <img
             className="bb-product-card__img"
-            src={image.url}
+            src={mediaUrl(image.url)}
             alt=""
             loading="lazy"
             decoding="async"
@@ -36,7 +38,7 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
         )}
 
         <span className="bb-product-card__badges">
-          <StockBadge stock={product.stock} />
+          <StockBadge stock={terms.available} unit={terms.unit} />
         </span>
       </Link>
 
@@ -54,7 +56,7 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
         ) : null}
 
         <div className="bb-product-card__foot">
-          <span className="bb-price">{formatPrice(product.price)}</span>
+          <span className="bb-price">{formatUnitPrice(product.price, product.price_unit)}</span>
         </div>
 
         <button

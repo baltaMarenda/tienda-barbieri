@@ -8,13 +8,24 @@ export interface Category {
   name: string;
 }
 
+/**
+ * Unidad de venta: "unit" (unidad), "box" (caja) o "m2" (metro cuadrado).
+ * Caja y m² se usan sólo en rubros cerámicos (ver lib/units.ts).
+ */
+export type SaleUnit = "unit" | "box" | "m2";
+
 export interface Product {
   id: number;
   name: string;
   description: string | null;
   category_id: number;
   price: number;
+  price_unit: SaleUnit;
+  /** Puede tener decimales cuando se mide en m². */
   stock: number;
+  stock_unit: SaleUnit;
+  /** m² que trae cada caja; permite convertir entre caja y m². */
+  m2_per_box: number | null;
 }
 
 export interface ProductListResponse {
@@ -64,7 +75,10 @@ export interface ProductPayload {
   description: string | null;
   category_id: number;
   price: number;
+  price_unit: SaleUnit;
   stock: number;
+  stock_unit: SaleUnit;
+  m2_per_box: number | null;
 }
 
 export interface ImagePayload {
@@ -79,8 +93,11 @@ export interface ImagePayload {
 export interface CartLine {
   productId: number;
   name: string;
+  /** Precio por `unit` (ver `saleTerms` en lib/units.ts). */
   price: number;
+  /** Disponible, expresado en `unit`. */
   stock: number;
+  unit: SaleUnit;
   imageUrl: string | null;
   quantity: number;
 }

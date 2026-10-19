@@ -58,6 +58,30 @@ export function createImage(payload: ImagePayload): Promise<ProductImage> {
 }
 
 /**
+ * Sube archivos de imagen para un producto. El backend los comprime a WebP,
+ * los guarda y los agrega al final de la galería, activos y con `alt` igual al
+ * nombre del producto si no se indica otro.
+ */
+export function uploadImages(
+  productId: number,
+  files: File[],
+  alt?: string,
+): Promise<ProductImage[]> {
+  invalidateImagesCache();
+
+  const form = new FormData();
+  form.append("product_id", String(productId));
+  for (const file of files) form.append("files", file);
+  if (alt) form.append("alt", alt);
+
+  return request<ProductImage[]>("/images/upload", {
+    method: "POST",
+    body: form,
+    auth: true,
+  });
+}
+
+/**
  * `product_id` va siempre, incluso si no cambió: el servicio del backend hace
  * `product_repository.get_by_id(db, image_data.product_id)` sin chequear None y
  * responde 404 "Product not found" si el campo viene ausente.

@@ -1,0 +1,41 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# Las variables con sync: false se completan a mano en el dashboard al crear el Blueprint.
+services:
+  - type: web
+    name: tienda-barbieri-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.3
+      - key: DATABASE_URL # Neon, conexión directa (la usa Alembic)
+        sync: false
+      - key: DATABASE_URL_POOLED # Neon, conexión pooled (la usa la app)
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CLOUDINARY_URL # cloudinary://<api_key>:<api_secret>@<cloud_name>
+        sync: false
+      - key: CORS_ORIGINS # URL del front, ej: https://tienda-barbieri.onrender.com
+        sync: false
+
+  - type: web
+    name: tienda-barbieri
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # SPA: cualquier ruta la resuelve react-router.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_API_URL # URL del backend, ej: https://tienda-barbieri-api.onrender.com
+        sync: false

@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.image import Image
 
@@ -23,3 +24,15 @@ def delete(db: Session, image: Image):
     db.delete(image)
     db.commit()
     return image
+
+def create_many(db: Session, images: list[Image]):
+    db.add_all(images)
+    db.commit()
+    for image in images:
+        db.refresh(image)
+
+    return images
+
+def get_next_order(db: Session, product_id: int) -> int:
+    current = db.query(func.max(Image.order)).filter_by(product_id=product_id).scalar()
+    return 0 if current is None else current + 1

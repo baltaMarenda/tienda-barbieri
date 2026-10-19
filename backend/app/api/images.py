@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
@@ -12,6 +12,19 @@ router = APIRouter(prefix="/images", tags=["Images"])
 @router.post("/", response_model=ImageResponse)
 async def create_images(image: ImageCreate, db:Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
     return image_service.create_image(db, image)
+
+# Sync a propósito: la compresión con Pillow corre en el threadpool de FastAPI
+# y no bloquea el event loop.
+@router.post("/upload", response_model=list[ImageResponse])
+def upload_images(
+    product_id: int = Form(gt=0),
+    files: list[UploadFile] = File(),
+    alt: str | None = Form(default=None),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+):
+    contents = [file.file.read() for file in files]
+    return image_service.upload_images(db, product_id, contents, alt)
 
 @router.get("/", response_model=list[ImageResponse])
 async def get_images(db:Session = Depends(get_db)):

@@ -1,4 +1,5 @@
-import { formatNumber } from "../../lib/format";
+import { formatQuantity } from "../../lib/units";
+import type { SaleUnit } from "../../types";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -6,7 +7,7 @@ const LOW_STOCK_THRESHOLD = 5;
  * El estado nunca se comunica sólo con color: el punto va siempre acompañado
  * del texto, para daltonismo y para lectores de pantalla.
  */
-export function StockBadge({ stock }: { stock: number }) {
+export function StockBadge({ stock, unit = "unit" }: { stock: number; unit?: SaleUnit }) {
   if (stock <= 0) {
     return (
       <span className="bb-badge bb-badge--danger">
@@ -20,7 +21,7 @@ export function StockBadge({ stock }: { stock: number }) {
     return (
       <span className="bb-badge bb-badge--warning">
         <span className="bb-badge__dot" />
-        {`Últimas ${formatNumber(stock)} u.`}
+        {unit === "unit" ? `Últimas ${stock} u.` : `Últimas ${formatQuantity(stock, unit)}`}
       </span>
     );
   }

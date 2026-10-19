@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.image import Image
 from app.repositories import image_repository, product_repository
 from app.schemas.image import ImageCreate, ImageUpdate
+from app.core.media import save_product_image, delete_media_file
 
 def get_all_images(db:Session):
     return image_repository.get_all(db)
@@ -47,14 +48,15 @@ def update_image(db:Session, image_id:int, image_data:ImageUpdate):
             detail="Image not found"
         )
 
-    product = product_repository.get_by_id(db, image_data.product_id)
+    if image_data.product_id is not None:
+        product = product_repository.get_by_id(db, image_data.product_id)
 
-    if product is None:
-       raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-    )
-    
+        if product is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found"
+            )
+
     for key, value in image_data.model_dump(exclude_unset=True).items():
         setattr(image, key, value)
 
@@ -69,4 +71,47 @@ def delete_image(db:Session, image_id:int):
             detail="Image not found"
         )
 
-    return image_repository.delete(db, image)
+    deleted = image_repository.delete(db, image)
+    delete_media_file(deleted.url)
+    return deleted
+
+def upload_images(db: Session, product_id: int, files: list[bytes], alt: str | None = None):
+    product = product_repository.get_by_id(db, product_id)
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
+    if not files:
+        raise HTTPException(
+            status_code=422,
+            detail="No files uploaded"
+        )
+
+    # Se comprimen todas antes de tocar la base: si una falla no queda nada a medias.
+    urls = []
+    try:
+        for data in files:
+            urls.append(save_product_image(data))
+    except HTTPException:
+        for url in urls:
+            delete_media_file(url)
+        raise
+
+    next_order = image_repository.get_next_order(db, product_id)
+    label = alt.strip() if alt and alt.strip() else product.name
+
+    new_images = [
+        Image(
+            product_id=product_id,
+            url=url,
+            alt=label,
+            order=next_order + index,
+            is_active=True
+        )
+        for index, url in enumerate(urls)
+    ]
+
+    return image_repository.create_many(db, new_images)

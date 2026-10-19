@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
+import { mediaUrl } from "../../api/client";
 import {
-  createImage,
   deleteImage,
   getAllImages,
   invalidateImagesCache,
   updateImage,
+  uploadImages,
 } from "../../api/images";
 import { getAllProducts } from "../../api/products";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
@@ -14,15 +15,19 @@ import { Modal } from "../../components/ui/Dialog";
 import { SelectField, TextField } from "../../components/ui/Field";
 import { Alert, EmptyState, Spinner } from "../../components/ui/Feedback";
 import { Icon } from "../../components/ui/Icon";
+import { usePendingImages } from "../../hooks/usePendingImages";
 import { useToast } from "../../hooks/useToast";
 import type { ImagePayload, Product, ProductImage } from "../../types";
 
 interface FieldErrors {
   product_id?: string;
-  url?: string;
+  files?: string;
   alt?: string;
   order?: string;
 }
+
+/** Mismo tope que el backend (app/core/media.py). */
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 /* --- Formulario --------------------------------------------------------------- */
 
@@ -33,9 +38,15 @@ interface ImageFormProps {
   onSaved: (message: string) => void;
 }
 
+/**
+ * Alta: se eligen uno o más archivos del disco y el backend los comprime y los
+ * agrega al final de la galería del producto. Edición: el archivo no cambia;
+ * se ajustan producto, texto alternativo, orden y visibilidad.
+ */
 function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
   const [productId, setProductId] = useState(image ? String(image.product_id) : "");
-  const [url, setUrl] = useState(image?.url ?? "");
+  const { pending, add: addFiles, remove: removeFile } = usePendingImages();
+  const files = pending.map((item) => item.file);
   const [alt, setAlt] = useState(image?.alt ?? "");
   const [order, setOrder] = useState(image ? String(image.order) : "0");
   const [isActive, setIsActive] = useState(image ? image.is_active : true);
@@ -48,38 +59,42 @@ function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
 
     const found: FieldErrors = {};
     if (productId === "") found.product_id = "Elegí a qué producto pertenece.";
-    if (url.trim() === "") found.url = "Pegá la URL de la imagen.";
-    if (alt.trim() === "") {
-      found.alt =
-        "El texto alternativo es obligatorio: describe la imagen para lectores de pantalla.";
-    }
 
-    const orderValue = Number(order);
-    if (order.trim() === "" || !Number.isInteger(orderValue) || orderValue < 0) {
-      found.order = "El orden debe ser un entero de 0 o más.";
+    if (image) {
+      if (alt.trim() === "") {
+        found.alt =
+          "El texto alternativo es obligatorio: describe la imagen para lectores de pantalla.";
+      }
+      const orderValue = Number(order);
+      if (order.trim() === "" || !Number.isInteger(orderValue) || orderValue < 0) {
+        found.order = "El orden debe ser un entero de 0 o más.";
+      }
+    } else if (files.length === 0) {
+      found.files = "Elegí al menos una imagen.";
+    } else if (files.some((file) => file.size > MAX_IMAGE_BYTES)) {
+      found.files = "Cada imagen puede pesar hasta 15 MB.";
     }
 
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-
-    const payload: ImagePayload = {
-      product_id: Number(productId),
-      url: url.trim(),
-      alt: alt.trim(),
-      order: orderValue,
-      is_active: isActive,
-    };
 
     setSaving(true);
     setFormError(null);
 
     try {
       if (image) {
+        const payload: ImagePayload = {
+          product_id: Number(productId),
+          url: image.url,
+          alt: alt.trim(),
+          order: Number(order),
+          is_active: isActive,
+        };
         await updateImage(image.id, payload);
         onSaved("Se actualizó la imagen.");
       } else {
-        await createImage(payload);
-        onSaved("Se cargó la imagen.");
+        await uploadImages(Number(productId), files, alt.trim() || undefined);
+        onSaved(files.length === 1 ? "Se cargó la imagen." : `Se cargaron ${files.length} imágenes.`);
       }
     } catch (cause: unknown) {
       setFormError(
@@ -93,7 +108,7 @@ function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
     <Modal
       open
       onClose={onClose}
-      title={image ? "Editar imagen" : "Nueva imagen"}
+      title={image ? "Editar imagen" : "Subir imágenes"}
       footer={
         <>
           <button
@@ -111,7 +126,7 @@ function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
             disabled={saving}
           >
             {saving ? <Spinner /> : <Icon name="check-circle" size={18} />}
-            {saving ? "Guardando…" : "Guardar"}
+            {saving ? (image ? "Guardando…" : "Subiendo…") : "Guardar"}
           </button>
         </>
       }
@@ -134,58 +149,100 @@ function ImageForm({ image, products, onClose, onSaved }: ImageFormProps) {
           ))}
         </SelectField>
 
-        <TextField
-          label="URL de la imagen"
-          type="url"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          error={errors.url}
-          placeholder="https://…"
-          required
-        />
-
-        {url.trim() ? (
+        {image ? (
           <div className="bb-gallery__main" style={{ maxWidth: 260 }}>
-            <img src={url} alt="Vista previa de la imagen cargada" />
+            <img src={mediaUrl(image.url)} alt="Vista previa de la imagen" />
           </div>
-        ) : null}
+        ) : (
+          <div className="bb-field">
+            <span className="bb-label">Archivos</span>
+            <ul className="bb-image-picker">
+              {pending.map((item, index) => (
+                <li key={item.preview} className="bb-image-picker__item">
+                  <img src={item.preview} alt={`Nueva imagen: ${item.file.name}`} />
+                  <button
+                    type="button"
+                    className="bb-icon-btn bb-image-picker__action"
+                    onClick={() => removeFile(index)}
+                    aria-label={`Descartar ${item.file.name}`}
+                  >
+                    <Icon name="x" size={16} />
+                  </button>
+                </li>
+              ))}
+              <li>
+                <label className="bb-image-picker__add">
+                  <Icon name="plus" size={22} />
+                  <span>Elegir</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+                    multiple
+                    className="bb-sr-only"
+                    onChange={(event) => {
+                      addFiles(Array.from(event.target.files ?? []));
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+              </li>
+            </ul>
+            {errors.files ? (
+              <span className="bb-error">
+                <Icon name="alert-circle" size={16} />
+                {errors.files}
+              </span>
+            ) : (
+              <span className="bb-hint">
+                JPG, PNG o WebP de hasta 15 MB. Se comprimen y se guardan en el sitio.
+              </span>
+            )}
+          </div>
+        )}
 
         <TextField
           label="Texto alternativo"
           value={alt}
           onChange={(event) => setAlt(event.target.value)}
           error={errors.alt}
-          hint="Describí lo que se ve, por ejemplo: “Ventana corrediza de aluminio blanco”."
-          required
+          optional={!image}
+          hint={
+            image
+              ? "Describí lo que se ve, por ejemplo: “Ventana corrediza de aluminio blanco”."
+              : "Si lo dejás vacío se usa el nombre del producto."
+          }
+          required={image !== null}
         />
 
-        <div className="bb-form-grid">
-          <TextField
-            label="Orden"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step="1"
-            value={order}
-            onChange={(event) => setOrder(event.target.value)}
-            error={errors.order}
-            hint="0 es la principal."
-            required
-          />
+        {image ? (
+          <div className="bb-form-grid">
+            <TextField
+              label="Orden"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step="1"
+              value={order}
+              onChange={(event) => setOrder(event.target.value)}
+              error={errors.order}
+              hint="0 es la principal."
+              required
+            />
 
-          <div className="bb-field">
-            <span className="bb-label">Visibilidad</span>
-            <label className="bb-row" style={{ minHeight: 44 }}>
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(event) => setIsActive(event.target.checked)}
-                style={{ width: 18, height: 18 }}
-              />
-              Mostrar en la tienda
-            </label>
+            <div className="bb-field">
+              <span className="bb-label">Visibilidad</span>
+              <label className="bb-row" style={{ minHeight: 44 }}>
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(event) => setIsActive(event.target.checked)}
+                  style={{ width: 18, height: 18 }}
+                />
+                Mostrar en la tienda
+              </label>
+            </div>
           </div>
-        </div>
+        ) : null}
       </form>
     </Modal>
   );
@@ -317,7 +374,7 @@ export function AdminImages() {
           disabled={products.length === 0}
         >
           <Icon name="plus" size={18} />
-          Nueva imagen
+          Subir imágenes
         </button>
       </div>
 
@@ -374,7 +431,7 @@ export function AdminImages() {
           title={
             filterProduct ? "Este producto no tiene imágenes" : "Todavía no hay imágenes"
           }
-          description="Cargá la URL de una imagen alojada en tu servidor o CDN y asociala a un producto."
+          description="Subí fotos desde tu computadora o celular y asocialas a un producto."
           action={
             <button
               type="button"
@@ -383,7 +440,7 @@ export function AdminImages() {
               disabled={products.length === 0}
             >
               <Icon name="plus" size={18} />
-              Nueva imagen
+              Subir imágenes
             </button>
           }
         />
@@ -413,7 +470,7 @@ export function AdminImages() {
                       className="bb-cart-line__media"
                       style={{ display: "block", width: 48 }}
                     >
-                      <img src={image.url} alt="" loading="lazy" decoding="async" />
+                      <img src={mediaUrl(image.url)} alt="" loading="lazy" decoding="async" />
                     </span>
                   </td>
                   <td>{productName(image.product_id)}</td>

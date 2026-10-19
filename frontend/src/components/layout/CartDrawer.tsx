@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 
+import { mediaUrl } from "../../api/client";
 import { formatPrice, plural } from "../../lib/format";
+import { formatQuantity, formatUnitPrice, unitLabel } from "../../lib/units";
 import { useCart } from "../../hooks/useCart";
 import { Drawer } from "../ui/Dialog";
 import { EmptyState } from "../ui/Feedback";
 import { Icon } from "../ui/Icon";
 
 export function CartDrawer() {
-  const { lines, count, total, isOpen, closeCart, setQuantity, remove, clear } =
+  const { lines, total, isOpen, closeCart, setQuantity, remove, clear } =
     useCart();
 
   const footer =
@@ -67,7 +69,7 @@ export function CartDrawer() {
             className="bb-muted"
             style={{ fontSize: "var(--text-sm)", marginBottom: "var(--space-4)" }}
           >
-            {count} {plural(count, "unidad", "unidades")} · {lines.length}{" "}
+            {lines.length}{" "}
             {plural(lines.length, "producto", "productos")}
           </p>
 
@@ -76,7 +78,7 @@ export function CartDrawer() {
               <li key={line.productId} className="bb-cart-line">
                 <div className="bb-cart-line__media">
                   {line.imageUrl ? (
-                    <img src={line.imageUrl} alt="" loading="lazy" decoding="async" />
+                    <img src={mediaUrl(line.imageUrl)} alt="" loading="lazy" decoding="async" />
                   ) : (
                     <span className="bb-media-empty">
                       <Icon name="image" size={18} />
@@ -94,7 +96,9 @@ export function CartDrawer() {
                   </Link>
 
                   <p className="bb-muted" style={{ fontSize: "var(--text-sm)" }}>
-                    {formatPrice(line.price)} c/u
+                    {line.unit === "unit"
+                      ? `${formatPrice(line.price)} c/u`
+                      : formatUnitPrice(line.price, line.unit)}
                   </p>
 
                   <div className="bb-cart-line__foot">
@@ -102,7 +106,7 @@ export function CartDrawer() {
                       <button
                         type="button"
                         onClick={() => setQuantity(line.productId, line.quantity - 1)}
-                        aria-label={`Quitar una unidad de ${line.name}`}
+                        aria-label={`Quitar una ${unitLabel(1, line.unit)} de ${line.name}`}
                       >
                         <Icon name="minus" size={16} />
                       </button>
@@ -123,7 +127,7 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => setQuantity(line.productId, line.quantity + 1)}
                         disabled={line.quantity >= line.stock}
-                        aria-label={`Agregar una unidad de ${line.name}`}
+                        aria-label={`Agregar una ${unitLabel(1, line.unit)} de ${line.name}`}
                       >
                         <Icon name="plus" size={16} />
                       </button>
@@ -144,7 +148,9 @@ export function CartDrawer() {
                   </div>
 
                   {line.quantity >= line.stock ? (
-                    <p className="bb-hint">Máximo disponible: {line.stock} u.</p>
+                    <p className="bb-hint">
+                      Máximo disponible: {formatQuantity(line.stock, line.unit)}
+                    </p>
                   ) : null}
                 </div>
               </li>

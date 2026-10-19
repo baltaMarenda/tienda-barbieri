@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { readStorage, STORAGE_KEYS, writeStorage } from "../lib/storage";
+import { saleTerms } from "../lib/units";
 import { CartContext } from "./cart-context";
 import type { CartContextValue } from "./cart-context";
 import type { CartLine, Product } from "../types";
@@ -28,7 +29,8 @@ function isCartLine(value: unknown): value is CartLine {
 function loadCart(): CartLine[] {
   const raw = readStorage<unknown>(STORAGE_KEYS.cart, []);
   if (!Array.isArray(raw)) return [];
-  return raw.filter(isCartLine);
+  // Los carritos guardados antes de existir las unidades de venta eran por unidad.
+  return raw.filter(isCartLine).map((line) => ({ ...line, unit: line.unit ?? "unit" }));
 }
 
 function clamp(quantity: number, stock: number): number {
@@ -49,7 +51,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const add = useCallback(
     (product: Product, imageUrl: string | null, quantity = 1) => {
-      if (product.stock <= 0) return;
+      const terms = saleTerms(product);
+      if (terms.available <= 0) return;
 
       setLines((current) => {
         const index = current.findIndex((line) => line.productId === product.id);
@@ -58,23 +61,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const line: CartLine = {
             productId: product.id,
             name: product.name,
-            price: product.price,
-            stock: product.stock,
+            price: terms.unitPrice,
+            stock: terms.available,
+            unit: terms.unit,
             imageUrl,
-            quantity: clamp(quantity, product.stock),
+            quantity: clamp(quantity, terms.available),
           };
           return [...current, line];
         }
 
-        // Producto ya en el carrito: se acumula y se re-sincronizan precio/stock.
+        // Producto ya en el carrito: se acumula y se re-sincronizan precio/stock/unidad.
         const next = [...current];
         const existing = next[index];
         next[index] = {
           ...existing,
-          price: product.price,
-          stock: product.stock,
+          price: terms.unitPrice,
+          stock: terms.available,
+          unit: terms.unit,
           imageUrl: imageUrl ?? existing.imageUrl,
-          quantity: clamp(existing.quantity + quantity, product.stock),
+          quantity: clamp(existing.quantity + quantity, terms.available),
         };
         return next;
       });

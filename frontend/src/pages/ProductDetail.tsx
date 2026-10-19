@@ -10,7 +10,9 @@ import { useCategories } from "../hooks/useCategories";
 import { useProduct } from "../hooks/useProduct";
 import { useProductImages } from "../hooks/useProductImages";
 import { useProducts } from "../hooks/useProducts";
+import { mediaUrl } from "../api/client";
 import { formatNumber, formatPrice } from "../lib/format";
+import { formatQuantity, formatUnitPrice, saleTerms, unitLabel } from "../lib/units";
 import { SITE } from "../lib/site";
 
 const RELATED_LIMIT = 4;
@@ -35,6 +37,7 @@ function ProductDetailView({ productId }: { productId: number }) {
 
   const images = imagesByProduct.get(productId) ?? [];
   const category = product ? categoryById.get(product.category_id) : undefined;
+  const terms = product ? saleTerms(product) : null;
 
   /* Relacionados: mismo rubro. Se piden recién cuando sabemos la categoría. */
   const { data: relatedData } = useProducts({
@@ -102,7 +105,7 @@ function ProductDetailView({ productId }: { productId: number }) {
               <span className="bb-skeleton" style={{ display: "block", height: "100%" }} />
             ) : images.length > 0 ? (
               <img
-                src={images[activeImage]?.url}
+                src={images[activeImage] ? mediaUrl(images[activeImage].url) : undefined}
                 alt={images[activeImage]?.alt || product?.name || ""}
                 decoding="async"
               />
@@ -124,7 +127,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                   aria-label={`Ver imagen ${index + 1} de ${images.length}: ${image.alt}`}
                   onClick={() => setActiveImage(index)}
                 >
-                  <img src={image.url} alt="" loading="lazy" decoding="async" />
+                  <img src={mediaUrl(image.url)} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -133,7 +136,7 @@ function ProductDetailView({ productId }: { productId: number }) {
 
         {/* --- Ficha ---------------------------------------------------------- */}
         <div>
-          {loading || !product ? (
+          {loading || !product || !terms ? (
             <div className="bb-stack">
               <TextSkeleton width="30%" height={14} />
               <TextSkeleton width="80%" height={36} />
@@ -161,29 +164,40 @@ function ProductDetailView({ productId }: { productId: number }) {
               ) : null}
 
               <div className="bb-pdp__price-box">
-                <span className="bb-price bb-price--lg">{formatPrice(product.price)}</span>
+                <span className="bb-price bb-price--lg">
+                  {formatUnitPrice(product.price, product.price_unit)}
+                </span>
                 <p className="bb-hint" style={{ marginTop: "var(--space-1)" }}>
-                  Precio final por unidad, IVA incluido.
+                  {product.price_unit === "m2"
+                    ? "Precio final por metro cuadrado, IVA incluido."
+                    : `Precio final por ${unitLabel(1, product.price_unit)}, IVA incluido.`}
+                  {terms.unit === "box" && product.price_unit === "m2" && terms.m2PerBox
+                    ? ` Se vende por caja de ${formatQuantity(terms.m2PerBox, "m2")}: ${formatPrice(terms.unitPrice)} la caja.`
+                    : null}
                 </p>
 
                 <div style={{ marginTop: "var(--space-4)" }}>
-                  <StockBadge stock={product.stock} />
-                  {product.stock > 0 ? (
+                  <StockBadge stock={terms.available} unit={terms.unit} />
+                  {terms.available > 0 ? (
                     <span
                       className="bb-muted"
                       style={{ marginLeft: "var(--space-2)", fontSize: "var(--text-sm)" }}
                     >
-                      {formatNumber(product.stock)} unidades disponibles
+                      {formatQuantity(terms.available, terms.unit)}{" "}
+                      {terms.available === 1 ? "disponible" : "disponibles"}
+                      {terms.unit === "box" && terms.m2PerBox
+                        ? ` (${formatQuantity(terms.available * terms.m2PerBox, "m2")})`
+                        : null}
                     </span>
                   ) : null}
                 </div>
               </div>
 
-              {product.stock > 0 ? (
+              {terms.available > 0 ? (
                 <>
                   <div className="bb-pdp__qty">
                     <span className="bb-label" id="pdp-qty-label">
-                      Cantidad
+                      Cantidad{terms.unit === "unit" ? "" : ` (${unitLabel(2, terms.unit)})`}
                     </span>
 
                     <div className="bb-qty" role="group" aria-labelledby="pdp-qty-label">
@@ -191,7 +205,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                         type="button"
                         onClick={() => setQuantity((value) => Math.max(1, value - 1))}
                         disabled={quantity <= 1}
-                        aria-label="Restar una unidad"
+                        aria-label={`Restar una ${unitLabel(1, terms.unit)}`}
                       >
                         <Icon name="minus" size={16} />
                       </button>
@@ -200,14 +214,14 @@ function ProductDetailView({ productId }: { productId: number }) {
                         type="number"
                         inputMode="numeric"
                         min={1}
-                        max={product.stock}
+                        max={terms.available}
                         value={quantity}
                         aria-label="Cantidad a agregar"
                         onChange={(event) => {
                           const next = Number(event.target.value);
                           if (Number.isNaN(next)) return;
                           setQuantity(
-                            Math.min(Math.max(1, Math.trunc(next)), product.stock),
+                            Math.min(Math.max(1, Math.trunc(next)), terms.available),
                           );
                         }}
                       />
@@ -215,15 +229,22 @@ function ProductDetailView({ productId }: { productId: number }) {
                       <button
                         type="button"
                         onClick={() =>
-                          setQuantity((value) => Math.min(product.stock, value + 1))
+                          setQuantity((value) => Math.min(terms.available, value + 1))
                         }
-                        disabled={quantity >= product.stock}
-                        aria-label="Sumar una unidad"
+                        disabled={quantity >= terms.available}
+                        aria-label={`Sumar una ${unitLabel(1, terms.unit)}`}
                       >
                         <Icon name="plus" size={16} />
                       </button>
                     </div>
                   </div>
+
+                  {terms.unit === "box" && terms.m2PerBox ? (
+                    <p className="bb-hint" style={{ marginBottom: "var(--space-3)" }}>
+                      {formatQuantity(quantity, "box")} {quantity === 1 ? "cubre" : "cubren"}{" "}
+                      {formatQuantity(quantity * terms.m2PerBox, "m2")}.
+                    </p>
+                  ) : null}
 
                   <button
                     type="button"
@@ -231,7 +252,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                     onClick={() => add(product, images[0]?.url ?? null, quantity)}
                   >
                     <Icon name="cart" size={20} />
-                    Agregar al carrito · {formatPrice(product.price * quantity)}
+                    Agregar al carrito · {formatPrice(terms.unitPrice * quantity)}
                   </button>
                 </>
               ) : (
@@ -262,8 +283,18 @@ function ProductDetailView({ productId }: { productId: number }) {
                   </tr>
                   <tr>
                     <th scope="row">Stock</th>
-                    <td>{formatNumber(product.stock)} u.</td>
+                    <td>
+                      {product.stock_unit === "unit"
+                        ? `${formatNumber(product.stock)} u.`
+                        : formatQuantity(product.stock, product.stock_unit)}
+                    </td>
                   </tr>
+                  {terms.m2PerBox ? (
+                    <tr>
+                      <th scope="row">Rinde por caja</th>
+                      <td>{formatQuantity(terms.m2PerBox, "m2")}</td>
+                    </tr>
+                  ) : null}
                   <tr>
                     <th scope="row">Retiro</th>
                     <td>{SITE.address}</td>

@@ -7,6 +7,7 @@ import { Icon } from "../components/ui/Icon";
 import type { IconName } from "../components/ui/Icon";
 import { useCart } from "../hooks/useCart";
 import { formatPrice } from "../lib/format";
+import { formatQuantity } from "../lib/units";
 import { SITE } from "../lib/site";
 
 const SUBJECTS = [
@@ -45,7 +46,7 @@ export function Contact() {
           "--- Pedido armado en la web ---",
           ...lines.map(
             (line) =>
-              `• ${line.quantity} × ${line.name} — ${formatPrice(line.price * line.quantity)}`,
+              `• ${formatQuantity(line.quantity, line.unit ?? "unit")} × ${line.name} — ${formatPrice(line.price * line.quantity)}`,
           ),
           `Total estimado: ${formatPrice(total)}`,
         ].join("\n")
