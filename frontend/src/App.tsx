@@ -5,6 +5,7 @@ import { RequireAdmin } from "./components/RequireAdmin";
 import { AdminCategories } from "./pages/admin/AdminCategories";
 import { AdminImages } from "./pages/admin/AdminImages";
 import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminOrders } from "./pages/admin/AdminOrders";
 import { AdminProducts } from "./pages/admin/AdminProducts";
 import { Catalog } from "./pages/Catalog";
 import { Contact } from "./pages/Contact";
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="productos" element={<AdminProducts />} />
             <Route path="categorias" element={<AdminCategories />} />
             <Route path="imagenes" element={<AdminImages />} />
+            <Route path="pedidos" element={<AdminOrders />} />
           </Route>
         </Route>
 

@@ -89,7 +89,7 @@ export interface ImagePayload {
   is_active: boolean;
 }
 
-/** Línea del carrito local (no existe endpoint de pedidos en el backend). */
+/** Línea del carrito local; al confirmar se envía como `OrderPayload.items`. */
 export interface CartLine {
   productId: number;
   name: string;
@@ -100,4 +100,53 @@ export interface CartLine {
   unit: SaleUnit;
   imageUrl: string | null;
   quantity: number;
+}
+
+/* --- Pedidos ------------------------------------------------------------------ */
+
+export type PaymentMethod = "cash" | "transfer" | "card";
+export type ShippingMethod = "pickup" | "delivery";
+export type OrderStatus = "received" | "delivered";
+
+export interface OrderItem {
+  id: number;
+  /** null si el producto se borró después de hacer el pedido. */
+  product_id: number | null;
+  product_name: string;
+  unit: SaleUnit;
+  unit_price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: number;
+  customer_name: string;
+  customer_phone: string;
+  payment_method: PaymentMethod;
+  shipping_method: ShippingMethod;
+  shipping_address: string | null;
+  notes: string | null;
+  total: number;
+  status: OrderStatus;
+  /** UTC sin zona horaria (ver `parseServerDate` en lib/orders.ts). */
+  created_at: string;
+  items: OrderItem[];
+}
+
+export interface OrderListResponse {
+  items: Order[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export interface OrderPayload {
+  customer_name: string;
+  customer_phone: string;
+  payment_method: PaymentMethod;
+  shipping_method: ShippingMethod;
+  shipping_address: string | null;
+  notes: string | null;
+  items: { product_id: number; quantity: number }[];
 }

@@ -8,9 +8,9 @@ import type { CartContextValue } from "./cart-context";
 import type { CartLine, Product } from "../types";
 
 /**
- * Carrito 100% del lado del cliente: el backend todavía no expone endpoints de
- * carrito ni de pedidos. El estado vive en localStorage y el total se calcula
- * acá, así que cuando exista `POST /orders/` sólo hay que enviar `lines`.
+ * Carrito del lado del cliente: el estado vive en localStorage y el total se
+ * calcula acá. Al confirmar, el checkout envía `lines` a `POST /orders/` y el
+ * backend recalcula precios y total con los valores vigentes.
  */
 
 function isCartLine(value: unknown): value is CartLine {

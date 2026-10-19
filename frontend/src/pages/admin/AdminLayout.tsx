@@ -4,6 +4,7 @@ import { Icon } from "../../components/ui/Icon";
 import { useAuth } from "../../hooks/useAuth";
 
 const SECTIONS = [
+  { to: "/admin/pedidos", label: "Pedidos", icon: "cart" },
   { to: "/admin/productos", label: "Productos", icon: "package" },
   { to: "/admin/categorias", label: "Rubros", icon: "layers" },
   { to: "/admin/imagenes", label: "Imágenes", icon: "image" },

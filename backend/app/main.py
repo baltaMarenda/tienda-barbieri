@@ -13,6 +13,7 @@ from app.api.categories import router as category_router
 from app.api.images import router as image_router
 from app.api.user import router as user_router
 from app.api.auth import router as auth_router
+from app.api.orders import router as order_router
 from app.core.media import MEDIA_DIR, MEDIA_URL_PREFIX, ensure_media_dir
 
 Base.metadata.create_all(bind=engine)
@@ -57,6 +58,7 @@ app.include_router(category_router)
 app.include_router(image_router)
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(order_router)
 
 # Imágenes subidas desde el panel admin (ver app/core/media.py).
 ensure_media_dir()
