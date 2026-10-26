@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import { AreaQuantity } from "../components/product/AreaQuantity";
 import { ProductCard } from "../components/product/ProductCard";
 import { StockBadge } from "../components/product/StockBadge";
 import { Alert, ProductGridSkeleton, TextSkeleton } from "../components/ui/Feedback";
@@ -13,6 +14,7 @@ import { useProducts } from "../hooks/useProducts";
 import { mediaUrl } from "../api/client";
 import { formatNumber, formatPrice } from "../lib/format";
 import { formatQuantity, formatUnitPrice, saleTerms, unitLabel } from "../lib/units";
+import { CARD_NOTE, SHIPPING_NOTE } from "../lib/orders";
 import { SITE } from "../lib/site";
 
 const RELATED_LIMIT = 4;
@@ -170,7 +172,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                 <p className="bb-hint" style={{ marginTop: "var(--space-1)" }}>
                   {product.price_unit === "m2"
                     ? "Precio final por metro cuadrado, IVA incluido."
-                    : `Precio final por ${unitLabel(1, product.price_unit)}, IVA incluido.`}
+                    : `Precio final por ${unitLabel(1, terms.unit === "box" ? "box" : product.price_unit)}, IVA incluido.`}
                   {terms.unit === "box" && product.price_unit === "m2" && terms.m2PerBox
                     ? ` Se vende por caja de ${formatQuantity(terms.m2PerBox, "m2")}: ${formatPrice(terms.unitPrice)} la caja.`
                     : null}
@@ -195,61 +197,65 @@ function ProductDetailView({ productId }: { productId: number }) {
 
               {terms.available > 0 ? (
                 <>
-                  <div className="bb-pdp__qty">
-                    <span className="bb-label" id="pdp-qty-label">
-                      Cantidad{terms.unit === "unit" ? "" : ` (${unitLabel(2, terms.unit)})`}
-                    </span>
-
-                    <div className="bb-qty" role="group" aria-labelledby="pdp-qty-label">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                        disabled={quantity <= 1}
-                        aria-label={`Restar una ${unitLabel(1, terms.unit)}`}
-                      >
-                        <Icon name="minus" size={16} />
-                      </button>
-
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        max={terms.available}
-                        value={quantity}
-                        aria-label="Cantidad a agregar"
-                        onChange={(event) => {
-                          const next = Number(event.target.value);
-                          if (Number.isNaN(next)) return;
-                          setQuantity(
-                            Math.min(Math.max(1, Math.trunc(next)), terms.available),
-                          );
-                        }}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setQuantity((value) => Math.min(terms.available, value + 1))
-                        }
-                        disabled={quantity >= terms.available}
-                        aria-label={`Sumar una ${unitLabel(1, terms.unit)}`}
-                      >
-                        <Icon name="plus" size={16} />
-                      </button>
-                    </div>
-                  </div>
-
                   {terms.unit === "box" && terms.m2PerBox ? (
-                    <p className="bb-hint" style={{ marginBottom: "var(--space-3)" }}>
-                      {formatQuantity(quantity, "box")} {quantity === 1 ? "cubre" : "cubren"}{" "}
-                      {formatQuantity(quantity * terms.m2PerBox, "m2")}.
-                    </p>
-                  ) : null}
+                    <AreaQuantity
+                      boxes={quantity}
+                      onChange={setQuantity}
+                      m2PerBox={terms.m2PerBox}
+                      available={terms.available}
+                      boxPrice={terms.unitPrice}
+                    />
+                  ) : (
+                    <div className="bb-pdp__qty">
+                      <span className="bb-label" id="pdp-qty-label">
+                        Cantidad{terms.unit === "unit" ? "" : ` (${unitLabel(2, terms.unit)})`}
+                      </span>
+
+                      <div className="bb-qty" role="group" aria-labelledby="pdp-qty-label">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                          disabled={quantity <= 1}
+                          aria-label={`Restar una ${unitLabel(1, terms.unit)}`}
+                        >
+                          <Icon name="minus" size={16} />
+                        </button>
+
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={terms.available}
+                          value={quantity}
+                          aria-label="Cantidad a agregar"
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            if (Number.isNaN(next)) return;
+                            setQuantity(
+                              Math.min(Math.max(1, Math.trunc(next)), terms.available),
+                            );
+                          }}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQuantity((value) => Math.min(terms.available, value + 1))
+                          }
+                          disabled={quantity >= terms.available}
+                          aria-label={`Sumar una ${unitLabel(1, terms.unit)}`}
+                        >
+                          <Icon name="plus" size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="button"
                     className="bb-btn bb-btn--primary bb-btn--lg bb-btn--block"
                     onClick={() => add(product, images[0]?.url ?? null, quantity)}
+                    disabled={quantity < 1}
                   >
                     <Icon name="cart" size={20} />
                     Agregar al carrito · {formatPrice(terms.unitPrice * quantity)}
@@ -284,9 +290,9 @@ function ProductDetailView({ productId }: { productId: number }) {
                   <tr>
                     <th scope="row">Stock</th>
                     <td>
-                      {product.stock_unit === "unit"
+                      {product.stock_unit === "unit" && terms.unit !== "box"
                         ? `${formatNumber(product.stock)} u.`
-                        : formatQuantity(product.stock, product.stock_unit)}
+                        : formatQuantity(product.stock, terms.unit === "box" && product.stock_unit === "unit" ? "box" : product.stock_unit)}
                     </td>
                   </tr>
                   {terms.m2PerBox ? (
@@ -298,6 +304,14 @@ function ProductDetailView({ productId }: { productId: number }) {
                   <tr>
                     <th scope="row">Retiro</th>
                     <td>{SITE.address}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Envío</th>
+                    <td>{SHIPPING_NOTE}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Tarjeta</th>
+                    <td>{CARD_NOTE}</td>
                   </tr>
                 </tbody>
               </table>

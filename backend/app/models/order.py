@@ -11,6 +11,8 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     customer_name = Column(String, nullable=False)
     customer_phone = Column(String, nullable=False)
+    # Localidad o barrio del cliente; orienta la zona de envío.
+    customer_locality = Column(String, nullable=True)
     # "cash" (efectivo), "transfer" (transferencia) o "card" (tarjeta).
     payment_method = Column(String, nullable=False)
     # "pickup" (retiro en el local) o "delivery" (envío a domicilio).

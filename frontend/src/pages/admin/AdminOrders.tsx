@@ -11,6 +11,7 @@ import {
   PAYMENT_LABELS,
   SHIPPING_LABELS,
   STATUS_LABELS,
+  shippingFeeLabel,
 } from "../../lib/orders";
 import { formatQuantity, formatUnitPrice } from "../../lib/units";
 import type { Order, OrderListResponse, OrderStatus } from "../../types";
@@ -38,6 +39,9 @@ interface OrderCardProps {
 }
 
 function OrderCard({ order, saving, onStatusChange }: OrderCardProps) {
+  // El envío no es una línea del pedido: es lo que el total tiene por encima de los productos.
+  const itemsTotal = order.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+  const fee = Math.round(order.total - itemsTotal);
   const delivered = order.status === "delivered";
 
   return (
@@ -84,6 +88,12 @@ function OrderCard({ order, saving, onStatusChange }: OrderCardProps) {
               <Icon name="phone" size={16} />
               {order.customer_phone}
             </a>
+            {order.customer_locality ? (
+              <span className="bb-order__address">
+                <Icon name="map-pin" size={16} />
+                {order.customer_locality}
+              </span>
+            ) : null}
           </dd>
         </div>
 
@@ -131,6 +141,14 @@ function OrderCard({ order, saving, onStatusChange }: OrderCardProps) {
                 <td className="bb-table__num">{formatPrice(item.unit_price * item.quantity)}</td>
               </tr>
             ))}
+            {fee > 0 ? (
+              <tr>
+                <td>{shippingFeeLabel(fee)}</td>
+                <td className="bb-table__num">—</td>
+                <td className="bb-table__num">—</td>
+                <td className="bb-table__num">{formatPrice(fee)}</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

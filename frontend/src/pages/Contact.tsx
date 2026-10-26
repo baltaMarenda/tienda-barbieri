@@ -20,7 +20,7 @@ const SUBJECTS = [
 
 const CHANNELS: { icon: IconName; label: string; value: string; href?: string }[] = [
   { icon: "phone", label: "Teléfono", value: SITE.phone, href: SITE.phoneHref },
-  { icon: "mail", label: "Correo", value: SITE.email, href: `mailto:${SITE.email}` },
+  { icon: "instagram", label: "Instagram", value: SITE.instagram, href: SITE.instagramHref },
   { icon: "map-pin", label: "Dirección", value: SITE.address },
   { icon: "clock", label: "Horarios", value: SITE.hours },
 ];
@@ -32,13 +32,11 @@ export function Contact() {
     lines.length > 0 ? SUBJECTS[0] : SUBJECTS[1],
   );
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  /* El carrito viaja en el cuerpo del mensaje: el backend todavía no tiene
-     endpoint de pedidos, así que la consulta sale por correo. */
+  /* El carrito viaja en el cuerpo del mensaje: la consulta sale por WhatsApp,
+     así que no hace falta pedir correo ni teléfono. */
   const cartSummary =
     lines.length > 0
       ? [
@@ -56,20 +54,20 @@ export function Contact() {
     event.preventDefault();
 
     const body = [
+      `Hola! Soy ${name}, les escribo desde la web.`,
+      `*Motivo:* ${subject}`,
+      "",
       message,
       cartSummary,
-      "",
-      "---",
-      `Nombre: ${name}`,
-      `Correo: ${email}`,
-      phone ? `Teléfono: ${phone}` : "",
     ]
       .filter(Boolean)
       .join("\n");
 
-    window.location.href = `mailto:${SITE.email}?subject=${encodeURIComponent(
-      `[Web] ${subject}`,
-    )}&body=${encodeURIComponent(body)}`;
+    window.open(
+      `${SITE.whatsappHref}?text=${encodeURIComponent(body)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
 
     setSent(true);
   }
@@ -112,16 +110,16 @@ export function Contact() {
 
         <section>
           {sent ? (
-            <Alert tone="success" title="Abrimos tu cliente de correo">
-              Si no se abrió solo, escribinos a <strong>{SITE.email}</strong> o
-              llamanos al <strong>{SITE.phone}</strong>.
+            <Alert tone="success" title="Abrimos WhatsApp">
+              Si no se abrió solo, escribinos al <strong>{SITE.phone}</strong> o
+              por Instagram a <strong>{SITE.instagram}</strong>.
             </Alert>
           ) : null}
 
           {lines.length > 0 ? (
             <Alert tone="info" title="Tu pedido se adjunta al mensaje">
               Vamos a incluir los {lines.length} productos del carrito y el total
-              estimado de {formatPrice(total)} en el cuerpo del correo.
+              estimado de {formatPrice(total)} en el mensaje.
             </Alert>
           ) : null}
 
@@ -137,24 +135,6 @@ export function Contact() {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="name"
-              />
-
-              <TextField
-                label="Correo electrónico"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-              />
-
-              <TextField
-                label="Teléfono"
-                type="tel"
-                optional
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                autoComplete="tel"
               />
 
               <SelectField
@@ -182,11 +162,11 @@ export function Contact() {
 
             <div>
               <button type="submit" className="bb-btn bb-btn--primary bb-btn--lg">
-                <Icon name="mail" size={20} />
+                <Icon name="message-circle" size={20} />
                 Enviar consulta
               </button>
               <p className="bb-hint" style={{ marginTop: "var(--space-2)" }}>
-                Se abre tu aplicación de correo con el mensaje ya redactado.
+                Se abre WhatsApp con el mensaje ya redactado.
               </p>
             </div>
           </form>

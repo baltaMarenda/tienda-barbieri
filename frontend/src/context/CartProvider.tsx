@@ -64,6 +64,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: terms.unitPrice,
             stock: terms.available,
             unit: terms.unit,
+            m2PerBox: terms.unit === "box" ? terms.m2PerBox : null,
             imageUrl,
             quantity: clamp(quantity, terms.available),
           };
@@ -78,6 +79,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           price: terms.unitPrice,
           stock: terms.available,
           unit: terms.unit,
+          m2PerBox: terms.unit === "box" ? terms.m2PerBox : null,
           imageUrl: imageUrl ?? existing.imageUrl,
           quantity: clamp(existing.quantity + quantity, terms.available),
         };

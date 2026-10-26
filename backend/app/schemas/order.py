@@ -18,6 +18,7 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     customer_name: str = Field(min_length=1)
     customer_phone: str = Field(min_length=6)
+    customer_locality: str | None = None
     payment_method: PaymentMethod
     shipping_method: ShippingMethod
     shipping_address: str | None = None
@@ -41,6 +42,7 @@ class OrderResponse(BaseModel):
     id: int
     customer_name: str
     customer_phone: str
+    customer_locality: str | None
     payment_method: PaymentMethod
     shipping_method: ShippingMethod
     shipping_address: str | None

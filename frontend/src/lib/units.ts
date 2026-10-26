@@ -48,15 +48,14 @@ export interface SaleTerms {
 }
 
 /**
- * Cómo se vende un producto. Si se conocen los m² por caja, los cerámicos se
- * venden por cajas completas (el precio por m² se convierte a precio por caja);
+ * Cómo se vende un producto. Si se conocen los m² por caja, se vende por
+ * cajas completas (el precio por m² se convierte a precio por caja);
  * si no, en la misma unidad en la que está expresado el precio.
  */
 export function saleTerms(product: Product): SaleTerms {
   const m2PerBox = product.m2_per_box && product.m2_per_box > 0 ? product.m2_per_box : null;
-  const ceramic = product.price_unit !== "unit" || product.stock_unit !== "unit";
-
-  if (ceramic && m2PerBox) {
+  // Con m² por caja cargados se vende por caja; "unidad" se toma como una caja.
+  if (m2PerBox) {
     const unitPrice =
       product.price_unit === "m2" ? product.price * m2PerBox : product.price;
     // El epsilon evita que 14,4 m² / 1,44 m² por caja dé 9,999… cajas.

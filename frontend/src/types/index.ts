@@ -98,6 +98,8 @@ export interface CartLine {
   /** Disponible, expresado en `unit`. */
   stock: number;
   unit: SaleUnit;
+  /** m² por caja en cerámicos vendidos por caja; sirve para mostrar el equivalente. */
+  m2PerBox?: number | null;
   imageUrl: string | null;
   quantity: number;
 }
@@ -122,6 +124,7 @@ export interface Order {
   id: number;
   customer_name: string;
   customer_phone: string;
+  customer_locality: string | null;
   payment_method: PaymentMethod;
   shipping_method: ShippingMethod;
   shipping_address: string | null;
@@ -144,6 +147,7 @@ export interface OrderListResponse {
 export interface OrderPayload {
   customer_name: string;
   customer_phone: string;
+  customer_locality: string | null;
   payment_method: PaymentMethod;
   shipping_method: ShippingMethod;
   shipping_address: string | null;

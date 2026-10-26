@@ -7,18 +7,35 @@ from app.repositories import order_repository, product_repository
 from app.schemas.order import OrderCreate, OrderListResponse, OrderStatusUpdate
 
 import math
+import unicodedata
+
+# Envío a domicilio; se suma al total del pedido.
+LOCAL_SHIPPING_COST = 5000.0
+REGION_SHIPPING_COST = 50000.0
+
+
+def _is_chivilcoy(locality: str | None) -> bool:
+    """Misma regla que `isChivilcoy` del front (frontend/src/lib/orders.ts)."""
+    text = unicodedata.normalize("NFD", locality or "")
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn").lower()
+    return "chivilcoy" in text
+
+
+def shipping_cost(shipping_method: str, locality: str | None) -> float:
+    if shipping_method != "delivery":
+        return 0.0
+    return LOCAL_SHIPPING_COST if _is_chivilcoy(locality) else REGION_SHIPPING_COST
 
 
 def _sale_terms(product: Product):
     """
     Misma regla que `saleTerms` del front (frontend/src/lib/units.ts): si se
-    conocen los m² por caja, los cerámicos se venden por cajas completas.
+    conocen los m² por caja, se vende por cajas completas.
     Devuelve (unidad, precio por unidad, cantidad entera disponible).
     """
     m2_per_box = product.m2_per_box if product.m2_per_box and product.m2_per_box > 0 else None
-    ceramic = product.price_unit != "unit" or product.stock_unit != "unit"
-
-    if ceramic and m2_per_box:
+    # Con m² por caja cargados se vende por caja; "unit" se toma como una caja.
+    if m2_per_box:
         unit_price = product.price * m2_per_box if product.price_unit == "m2" else product.price
         # El epsilon evita que 14,4 m² / 1,44 m² por caja dé 9,999… cajas.
         boxes = product.stock / m2_per_box + 1e-9 if product.stock_unit == "m2" else product.stock
@@ -66,9 +83,13 @@ def create_order(db: Session, order_data: OrderCreate):
         ))
         total += unit_price * quantity
 
+    locality = (order_data.customer_locality or "").strip() or None
+    total += shipping_cost(order_data.shipping_method, locality)
+
     new_order = Order(
         customer_name=order_data.customer_name.strip(),
         customer_phone=order_data.customer_phone.strip(),
+        customer_locality=locality,
         payment_method=order_data.payment_method,
         shipping_method=order_data.shipping_method,
         shipping_address=address if order_data.shipping_method == "delivery" else None,

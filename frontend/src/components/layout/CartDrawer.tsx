@@ -24,7 +24,7 @@ export function CartDrawer() {
         </div>
 
         <p className="bb-hint" style={{ marginBottom: "var(--space-4)" }}>
-          Confirmá el pedido y te contactamos para coordinar el pago y la entrega.
+          Al confirmar se abre WhatsApp con el detalle del pedido para enviárnoslo.
         </p>
 
         <div className="bb-stack" style={{ gap: "var(--space-2)" }}>
@@ -150,6 +150,12 @@ export function CartDrawer() {
                         <Icon name="trash" size={18} />
                       </button>
                     </div>
+
+                    {line.unit === "box" && line.m2PerBox ? (
+                      <p className="bb-hint">
+                        Cubre {formatQuantity(line.quantity * line.m2PerBox, "m2")}
+                      </p>
+                    ) : null}
 
                     {line.quantity >= line.stock ? (
                       <p className="bb-hint">

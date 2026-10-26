@@ -1289,3 +1289,57 @@
 .bb-whatsapp:focus-visible {
   outline-offset: 3px;
 }
+
+/* --- Cantidad por caja o m² (cerámicos) --------------------------------------- */
+
+.bb-area-qty {
+  margin-block: var(--space-5);
+}
+
+.bb-segmented {
+  display: inline-flex;
+  margin-top: var(--space-2);
+  padding: 3px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.bb-segmented button {
+  min-width: 72px;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 3px);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.bb-segmented button[aria-pressed="true"] {
+  color: var(--brand-700);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.bb-area-qty .bb-pdp__qty {
+  margin-block: var(--space-4) var(--space-2);
+}
+
+.bb-area-qty__input {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.bb-area-qty__input .bb-input {
+  width: 120px;
+}
+
+.bb-area-qty__result {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

@@ -56,9 +56,9 @@ export function Footer() {
               </a>
             </li>
             <li>
-              <a href={`mailto:${SITE.email}`}>
-                <Icon name="mail" size={16} />
-                {SITE.email}
+              <a href={SITE.instagramHref} target="_blank" rel="noopener noreferrer">
+                <Icon name="instagram" size={16} />
+                {SITE.instagram}
               </a>
             </li>
             <li className="bb-footer__item">

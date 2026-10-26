@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { mediaUrl } from "../../api/client";
 import { formatUnitPrice, saleTerms } from "../../lib/units";
 import { useCart } from "../../hooks/useCart";
 import { Icon } from "../ui/Icon";
+import { AreaQuantityModal } from "./AreaQuantityModal";
 import { StockBadge } from "./StockBadge";
 import type { Product, ProductImage } from "../../types";
 
@@ -18,6 +20,9 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
   const href = `/productos/${product.id}`;
   const terms = saleTerms(product);
   const outOfStock = terms.available <= 0;
+  // Los cerámicos por caja abren la calculadora caja / m² antes de agregar.
+  const byArea = terms.unit === "box" && terms.m2PerBox !== null;
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
 
   return (
     <article className="bb-product-card">
@@ -62,7 +67,9 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
         <button
           type="button"
           className="bb-btn bb-btn--primary bb-product-card__cta"
-          onClick={() => add(product, image?.url ?? null, 1)}
+          onClick={() =>
+            byArea ? setCalculatorOpen(true) : add(product, image?.url ?? null, 1)
+          }
           disabled={outOfStock}
           aria-label={
             outOfStock
@@ -74,6 +81,14 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
           {outOfStock ? "Sin stock" : "Agregar"}
         </button>
       </div>
+
+      {calculatorOpen ? (
+        <AreaQuantityModal
+          product={product}
+          imageUrl={image?.url ?? null}
+          onClose={() => setCalculatorOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }
