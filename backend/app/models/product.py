@@ -11,7 +11,8 @@ class Product(Base):
     # Unidad en la que se expresa el precio y el stock: "unit", "box" o "m2".
     # Los rubros cerámicos usan caja o metro cuadrado; el resto, unidad.
     price_unit = Column(String, nullable=False, default="unit", server_default="unit")
-    stock = Column(Float, nullable=False)
+    # NULL: sin stock cargado; el producto se vende sin tope.
+    stock = Column(Float, nullable=True)
     stock_unit = Column(String, nullable=False, default="unit", server_default="unit")
     # Metros cuadrados que trae cada caja: permite convertir entre caja y m².
     m2_per_box = Column(Float, nullable=True)

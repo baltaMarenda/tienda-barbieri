@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 
 import { formatPrice } from "../../lib/format";
-import { formatQuantity } from "../../lib/units";
+import { formatQuantity, maxQuantity } from "../../lib/units";
 import { Icon } from "../ui/Icon";
 
 type BuyBy = "box" | "m2";
@@ -12,7 +12,8 @@ interface AreaQuantityProps {
   onChange: (boxes: number) => void;
   m2PerBox: number;
   /** Cajas disponibles. */
-  available: number;
+  /** `null`: sin stock cargado, sin tope. */
+  available: number | null;
   boxPrice: number;
 }
 
@@ -40,7 +41,8 @@ export function AreaQuantity({ boxes, onChange, m2PerBox, available, boxPrice }:
 
   const area = parseArea(areaInput);
   const needed = area === null ? 0 : boxesFor(area, m2PerBox);
-  const exceeds = needed > available;
+  const max = maxQuantity(available);
+  const exceeds = available !== null && needed > available;
 
   function switchTo(next: BuyBy) {
     if (next === buyBy) return;
@@ -57,7 +59,7 @@ export function AreaQuantity({ boxes, onChange, m2PerBox, available, boxPrice }:
   function changeArea(value: string) {
     setAreaInput(value);
     const parsed = parseArea(value);
-    onChange(parsed === null ? 0 : Math.min(boxesFor(parsed, m2PerBox), available));
+    onChange(parsed === null ? 0 : Math.min(boxesFor(parsed, m2PerBox), max));
   }
 
   return (
@@ -95,20 +97,20 @@ export function AreaQuantity({ boxes, onChange, m2PerBox, available, boxPrice }:
               type="number"
               inputMode="numeric"
               min={1}
-              max={available}
+              max={available ?? undefined}
               value={boxes}
               aria-label="Cajas a agregar"
               onChange={(event) => {
                 const next = Number(event.target.value);
                 if (Number.isNaN(next)) return;
-                onChange(Math.min(Math.max(1, Math.trunc(next)), available));
+                onChange(Math.min(Math.max(1, Math.trunc(next)), max));
               }}
             />
 
             <button
               type="button"
-              onClick={() => onChange(Math.min(available, boxes + 1))}
-              disabled={boxes >= available}
+              onClick={() => onChange(Math.min(max, boxes + 1))}
+              disabled={boxes >= max}
               aria-label="Sumar una caja"
             >
               <Icon name="plus" size={16} />
@@ -147,7 +149,7 @@ export function AreaQuantity({ boxes, onChange, m2PerBox, available, boxPrice }:
         ) : exceeds ? (
           <>
             Para {formatQuantity(area, "m2")} hacen falta {formatQuantity(needed, "box")}, pero hay{" "}
-            {formatQuantity(available, "box")} disponibles ({formatQuantity(available * m2PerBox, "m2")}).
+            {formatQuantity(max, "box")} disponibles ({formatQuantity(max * m2PerBox, "m2")}).
           </>
         ) : (
           <>

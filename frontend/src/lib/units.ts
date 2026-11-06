@@ -42,8 +42,11 @@ export interface SaleTerms {
   unit: SaleUnit;
   /** Precio de una `unit`. */
   unitPrice: number;
-  /** Cantidad entera disponible, expresada en `unit`. */
-  available: number;
+  /**
+   * Cantidad entera disponible, expresada en `unit`. `null` si el producto no
+   * tiene stock cargado: se vende sin tope.
+   */
+  available: number | null;
   m2PerBox: number | null;
 }
 
@@ -55,19 +58,30 @@ export interface SaleTerms {
 export function saleTerms(product: Product): SaleTerms {
   const m2PerBox = product.m2_per_box && product.m2_per_box > 0 ? product.m2_per_box : null;
   // Con m² por caja cargados se vende por caja; "unidad" se toma como una caja.
+  const stock = product.stock;
   if (m2PerBox) {
     const unitPrice =
       product.price_unit === "m2" ? product.price * m2PerBox : product.price;
     // El epsilon evita que 14,4 m² / 1,44 m² por caja dé 9,999… cajas.
     const boxes =
-      product.stock_unit === "m2" ? product.stock / m2PerBox + 1e-9 : product.stock;
-    return { unit: "box", unitPrice, available: Math.floor(boxes), m2PerBox };
+      stock === null ? null : product.stock_unit === "m2" ? stock / m2PerBox + 1e-9 : stock;
+    return { unit: "box", unitPrice, available: boxes === null ? null : Math.floor(boxes), m2PerBox };
   }
 
   return {
     unit: product.price_unit,
     unitPrice: product.price,
-    available: Math.floor(product.stock),
+    available: stock === null ? null : Math.floor(stock),
     m2PerBox,
   };
+}
+
+/** Tope de cantidad a vender: sin stock cargado no hay tope. */
+export function maxQuantity(available: number | null): number {
+  return available ?? Infinity;
+}
+
+/** Sin stock sólo cuando hay stock cargado y es 0. */
+export function isOutOfStock(available: number | null): boolean {
+  return available !== null && available <= 0;
 }

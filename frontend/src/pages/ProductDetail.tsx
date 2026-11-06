@@ -13,7 +13,7 @@ import { useProductImages } from "../hooks/useProductImages";
 import { useProducts } from "../hooks/useProducts";
 import { mediaUrl } from "../api/client";
 import { formatNumber, formatPrice } from "../lib/format";
-import { formatQuantity, formatUnitPrice, saleTerms, unitLabel } from "../lib/units";
+import { formatQuantity, formatUnitPrice, isOutOfStock, maxQuantity, saleTerms, unitLabel } from "../lib/units";
 import { CARD_NOTE, SHIPPING_NOTE } from "../lib/orders";
 import { SITE } from "../lib/site";
 
@@ -180,7 +180,7 @@ function ProductDetailView({ productId }: { productId: number }) {
 
                 <div style={{ marginTop: "var(--space-4)" }}>
                   <StockBadge stock={terms.available} unit={terms.unit} />
-                  {terms.available > 0 ? (
+                  {terms.available !== null && terms.available > 0 ? (
                     <span
                       className="bb-muted"
                       style={{ marginLeft: "var(--space-2)", fontSize: "var(--text-sm)" }}
@@ -195,7 +195,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                 </div>
               </div>
 
-              {terms.available > 0 ? (
+              {!isOutOfStock(terms.available) ? (
                 <>
                   {terms.unit === "box" && terms.m2PerBox ? (
                     <AreaQuantity
@@ -225,14 +225,14 @@ function ProductDetailView({ productId }: { productId: number }) {
                           type="number"
                           inputMode="numeric"
                           min={1}
-                          max={terms.available}
+                          max={terms.available ?? undefined}
                           value={quantity}
                           aria-label="Cantidad a agregar"
                           onChange={(event) => {
                             const next = Number(event.target.value);
                             if (Number.isNaN(next)) return;
                             setQuantity(
-                              Math.min(Math.max(1, Math.trunc(next)), terms.available),
+                              Math.min(Math.max(1, Math.trunc(next)), maxQuantity(terms.available)),
                             );
                           }}
                         />
@@ -240,9 +240,9 @@ function ProductDetailView({ productId }: { productId: number }) {
                         <button
                           type="button"
                           onClick={() =>
-                            setQuantity((value) => Math.min(terms.available, value + 1))
+                            setQuantity((value) => Math.min(maxQuantity(terms.available), value + 1))
                           }
-                          disabled={quantity >= terms.available}
+                          disabled={quantity >= maxQuantity(terms.available)}
                           aria-label={`Sumar una ${unitLabel(1, terms.unit)}`}
                         >
                           <Icon name="plus" size={16} />
@@ -287,14 +287,16 @@ function ProductDetailView({ productId }: { productId: number }) {
                     <th scope="row">Rubro</th>
                     <td>{category?.name ?? "—"}</td>
                   </tr>
-                  <tr>
-                    <th scope="row">Stock</th>
-                    <td>
-                      {product.stock_unit === "unit" && terms.unit !== "box"
-                        ? `${formatNumber(product.stock)} u.`
-                        : formatQuantity(product.stock, terms.unit === "box" && product.stock_unit === "unit" ? "box" : product.stock_unit)}
-                    </td>
-                  </tr>
+                  {product.stock !== null ? (
+                    <tr>
+                      <th scope="row">Stock</th>
+                      <td>
+                        {product.stock_unit === "unit" && terms.unit !== "box"
+                          ? `${formatNumber(product.stock)} u.`
+                          : formatQuantity(product.stock, terms.unit === "box" && product.stock_unit === "unit" ? "box" : product.stock_unit)}
+                      </td>
+                    </tr>
+                  ) : null}
                   {terms.m2PerBox ? (
                     <tr>
                       <th scope="row">Rinde por caja</th>

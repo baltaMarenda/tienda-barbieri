@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { readStorage, STORAGE_KEYS, writeStorage } from "../lib/storage";
-import { saleTerms } from "../lib/units";
+import { isOutOfStock, maxQuantity, saleTerms } from "../lib/units";
 import { CartContext } from "./cart-context";
 import type { CartContextValue } from "./cart-context";
 import type { CartLine, Product } from "../types";
@@ -20,7 +20,7 @@ function isCartLine(value: unknown): value is CartLine {
     typeof line.productId === "number" &&
     typeof line.name === "string" &&
     typeof line.price === "number" &&
-    typeof line.stock === "number" &&
+    (typeof line.stock === "number" || line.stock === null) &&
     typeof line.quantity === "number" &&
     line.quantity > 0
   );
@@ -33,8 +33,8 @@ function loadCart(): CartLine[] {
   return raw.filter(isCartLine).map((line) => ({ ...line, unit: line.unit ?? "unit" }));
 }
 
-function clamp(quantity: number, stock: number): number {
-  const max = Math.max(stock, 0);
+function clamp(quantity: number, stock: number | null): number {
+  const max = Math.max(maxQuantity(stock), 0);
   return Math.min(Math.max(Math.trunc(quantity), 1), Math.max(max, 1));
 }
 
@@ -52,7 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = useCallback(
     (product: Product, imageUrl: string | null, quantity = 1) => {
       const terms = saleTerms(product);
-      if (terms.available <= 0) return;
+      if (isOutOfStock(terms.available)) return;
 
       setLines((current) => {
         const index = current.findIndex((line) => line.productId === product.id);

@@ -12,7 +12,8 @@ class ProductCreate(BaseModel):
     category_id: int = Field(gt=0)
     price: float = Field(ge=0)
     price_unit: SaleUnit = "unit"
-    stock: float = Field(ge=0)
+    # None: sin stock cargado; se vende sin tope.
+    stock: float | None = Field(default=None, ge=0)
     stock_unit: SaleUnit = "unit"
     m2_per_box: float | None = Field(default=None, gt=0)
 

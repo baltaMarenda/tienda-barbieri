@@ -119,7 +119,7 @@ export function CartDrawer() {
                           type="number"
                           inputMode="numeric"
                           min={1}
-                          max={line.stock}
+                          max={line.stock ?? undefined}
                           value={line.quantity}
                           aria-label={`Cantidad de ${line.name}`}
                           onChange={(event) =>
@@ -130,7 +130,7 @@ export function CartDrawer() {
                         <button
                           type="button"
                           onClick={() => setQuantity(line.productId, line.quantity + 1)}
-                          disabled={line.quantity >= line.stock}
+                          disabled={line.stock !== null && line.quantity >= line.stock}
                           aria-label={`Agregar una ${unitLabel(1, line.unit)} de ${line.name}`}
                         >
                           <Icon name="plus" size={16} />
@@ -157,7 +157,7 @@ export function CartDrawer() {
                       </p>
                     ) : null}
 
-                    {line.quantity >= line.stock ? (
+                    {line.stock !== null && line.quantity >= line.stock ? (
                       <p className="bb-hint">
                         Máximo disponible: {formatQuantity(line.stock, line.unit)}
                       </p>

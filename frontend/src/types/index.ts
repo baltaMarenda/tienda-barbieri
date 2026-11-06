@@ -21,8 +21,8 @@ export interface Product {
   category_id: number;
   price: number;
   price_unit: SaleUnit;
-  /** Puede tener decimales cuando se mide en m². */
-  stock: number;
+  /** Puede tener decimales cuando se mide en m². `null`: sin stock cargado (se vende sin tope). */
+  stock: number | null;
   stock_unit: SaleUnit;
   /** m² que trae cada caja; permite convertir entre caja y m². */
   m2_per_box: number | null;
@@ -76,7 +76,7 @@ export interface ProductPayload {
   category_id: number;
   price: number;
   price_unit: SaleUnit;
-  stock: number;
+  stock: number | null;
   stock_unit: SaleUnit;
   m2_per_box: number | null;
 }
@@ -95,8 +95,8 @@ export interface CartLine {
   name: string;
   /** Precio por `unit` (ver `saleTerms` en lib/units.ts). */
   price: number;
-  /** Disponible, expresado en `unit`. */
-  stock: number;
+  /** Disponible, expresado en `unit`. `null`: sin stock cargado, sin tope. */
+  stock: number | null;
   unit: SaleUnit;
   /** m² por caja en cerámicos vendidos por caja; sirve para mostrar el equivalente. */
   m2PerBox?: number | null;

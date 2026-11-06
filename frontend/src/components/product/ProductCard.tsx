@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { mediaUrl } from "../../api/client";
-import { formatUnitPrice, saleTerms } from "../../lib/units";
+import { formatUnitPrice, isOutOfStock, saleTerms } from "../../lib/units";
 import { useCart } from "../../hooks/useCart";
 import { Icon } from "../ui/Icon";
 import { AreaQuantityModal } from "./AreaQuantityModal";
@@ -19,7 +19,7 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
   const { add } = useCart();
   const href = `/productos/${product.id}`;
   const terms = saleTerms(product);
-  const outOfStock = terms.available <= 0;
+  const outOfStock = isOutOfStock(terms.available);
   // Los cerámicos por caja abren la calculadora caja / m² antes de agregar.
   const byArea = terms.unit === "box" && terms.m2PerBox !== null;
   const [calculatorOpen, setCalculatorOpen] = useState(false);

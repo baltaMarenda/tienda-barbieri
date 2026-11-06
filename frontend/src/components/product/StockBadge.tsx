@@ -7,7 +7,10 @@ const LOW_STOCK_THRESHOLD = 5;
  * El estado nunca se comunica sólo con color: el punto va siempre acompañado
  * del texto, para daltonismo y para lectores de pantalla.
  */
-export function StockBadge({ stock, unit = "unit" }: { stock: number; unit?: SaleUnit }) {
+export function StockBadge({ stock, unit = "unit" }: { stock: number | null; unit?: SaleUnit }) {
+  // Sin stock cargado no se muestra nada: se vende igual.
+  if (stock === null) return null;
+
   if (stock <= 0) {
     return (
       <span className="bb-badge bb-badge--danger">

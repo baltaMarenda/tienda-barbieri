@@ -172,7 +172,9 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
     product ? String(product.category_id) : "",
   );
   const [price, setPrice] = useState(product ? String(product.price) : "");
-  const [stock, setStock] = useState(product ? String(product.stock) : "");
+  const [stock, setStock] = useState(
+    product && product.stock !== null ? String(product.stock) : "",
+  );
   const [priceUnit, setPriceUnit] = useState<SaleUnit>(product?.price_unit ?? "unit");
   const [stockUnit, setStockUnit] = useState<SaleUnit>(product?.stock_unit ?? "unit");
   const [m2PerBox, setM2PerBox] = useState(
@@ -277,9 +279,12 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
       found.price = "El precio no puede ser negativo.";
     }
 
+    // El stock es opcional: vacío = sin control de stock (se vende sin tope).
     const stockValue = Number(stock);
-    if (stock.trim() === "" || Number.isNaN(stockValue)) {
-      found.stock = "Ingresá el stock disponible.";
+    if (stock.trim() === "") {
+      // Sin stock cargado.
+    } else if (Number.isNaN(stockValue)) {
+      found.stock = "Ingresá un número válido o dejalo vacío.";
     } else if (stockValue < 0) {
       found.stock = "El stock no puede ser negativo.";
     } else if (effectiveStockUnit !== "m2" && !Number.isInteger(stockValue)) {
@@ -314,7 +319,7 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
       category_id: Number(categoryId),
       price: Number(price),
       price_unit: effectivePriceUnit,
-      stock: Number(stock),
+      stock: stock.trim() === "" ? null : Number(stock),
       stock_unit: effectiveStockUnit,
       m2_per_box: ceramic && m2PerBox.trim() !== "" ? Number(m2PerBox) : null,
     };
@@ -446,7 +451,7 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
                 value={stock}
                 onChange={(event) => setStock(event.target.value)}
                 error={errors.stock}
-                required
+                hint="Opcional. Vacío: se vende sin control de stock."
               />
             </>
           ) : null}
@@ -487,7 +492,7 @@ function ProductForm({ product, categories, onClose, onSaved }: ProductFormProps
                 value={stock}
                 onChange={(event) => setStock(event.target.value)}
                 error={errors.stock}
-                required
+                hint="Opcional. Vacío: se vende sin control de stock."
               />
 
               <SelectField
@@ -705,9 +710,11 @@ export function AdminProducts() {
                       {formatUnitPrice(product.price, product.price_unit)}
                     </td>
                     <td className="bb-table__num">
-                      {product.stock_unit === "unit"
-                        ? formatNumber(product.stock)
-                        : formatQuantity(product.stock, product.stock_unit)}
+                      {product.stock === null
+                        ? "—"
+                        : product.stock_unit === "unit"
+                          ? formatNumber(product.stock)
+                          : formatQuantity(product.stock, product.stock_unit)}
                     </td>
                     <td>
                       <div className="bb-table__actions">

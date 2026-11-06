@@ -31,17 +31,21 @@ def _sale_terms(product: Product):
     """
     Misma regla que `saleTerms` del front (frontend/src/lib/units.ts): si se
     conocen los m² por caja, se vende por cajas completas.
-    Devuelve (unidad, precio por unidad, cantidad entera disponible).
+    Devuelve (unidad, precio por unidad, cantidad entera disponible); la
+    cantidad es None si el producto no tiene stock cargado (se vende sin tope).
     """
+    stock = product.stock
     m2_per_box = product.m2_per_box if product.m2_per_box and product.m2_per_box > 0 else None
     # Con m² por caja cargados se vende por caja; "unit" se toma como una caja.
     if m2_per_box:
         unit_price = product.price * m2_per_box if product.price_unit == "m2" else product.price
         # El epsilon evita que 14,4 m² / 1,44 m² por caja dé 9,999… cajas.
-        boxes = product.stock / m2_per_box + 1e-9 if product.stock_unit == "m2" else product.stock
+        if stock is None:
+            return "box", unit_price, None
+        boxes = stock / m2_per_box + 1e-9 if product.stock_unit == "m2" else stock
         return "box", unit_price, math.floor(boxes)
 
-    return product.price_unit, product.price, math.floor(product.stock)
+    return product.price_unit, product.price, None if stock is None else math.floor(stock)
 
 
 def create_order(db: Session, order_data: OrderCreate):
@@ -68,7 +72,7 @@ def create_order(db: Session, order_data: OrderCreate):
             )
 
         unit, unit_price, available = _sale_terms(product)
-        if quantity > available:
+        if available is not None and quantity > available:
             raise HTTPException(
                 status_code=409,
                 detail=f"Not enough stock for '{product.name}' (available: {available})"
