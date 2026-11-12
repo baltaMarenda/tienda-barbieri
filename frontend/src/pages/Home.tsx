@@ -3,15 +3,14 @@ import { Link } from "react-router-dom";
 import { ProductCard } from "../components/product/ProductCard";
 import { Alert, EmptyState, ProductGridSkeleton } from "../components/ui/Feedback";
 import { Icon } from "../components/ui/Icon";
+import { activeImages } from "../api/images";
 import { useCategories } from "../hooks/useCategories";
-import { useProductImages } from "../hooks/useProductImages";
 import { useProducts } from "../hooks/useProducts";
 
 const FEATURED_LIMIT = 8;
 
 export function Home() {
   const { categories, categoryById, loading: loadingCategories } = useCategories();
-  const imagesByProduct = useProductImages();
   const { data, loading, error, reload } = useProducts({ limit: FEATURED_LIMIT });
 
   const products = data?.items ?? [];
@@ -126,7 +125,7 @@ export function Home() {
                 key={product.id}
                 product={product}
                 categoryName={categoryById.get(product.category_id)?.name}
-                image={imagesByProduct.get(product.id)?.[0]}
+                image={activeImages(product)[0]}
               />
             ))}
           </div>

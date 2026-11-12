@@ -470,7 +470,7 @@ export function AdminImages() {
                       className="bb-cart-line__media"
                       style={{ display: "block", width: 48 }}
                     >
-                      <img src={mediaUrl(image.url)} alt="" loading="lazy" decoding="async" />
+                      <img src={mediaUrl(image.url, 300)} alt="" loading="lazy" decoding="async" />
                     </span>
                   </td>
                   <td>{productName(image.product_id)}</td>

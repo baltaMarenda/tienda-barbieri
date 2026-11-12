@@ -8,7 +8,8 @@ class Image(Base):
     product_id = Column (
         Integer,
         ForeignKey("products.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+        index=True,
     )
     url = Column(String, nullable=False)
     alt = Column(String, nullable=False)

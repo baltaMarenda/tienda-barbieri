@@ -6,9 +6,9 @@ import { Alert, EmptyState, ProductGridSkeleton } from "../components/ui/Feedbac
 import { Icon } from "../components/ui/Icon";
 import { Pagination } from "../components/ui/Pagination";
 import { SearchInput } from "../components/ui/SearchInput";
+import { activeImages } from "../api/images";
 import { useCategories } from "../hooks/useCategories";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { useProductImages } from "../hooks/useProductImages";
 import { useProducts } from "../hooks/useProducts";
 import { formatNumber, plural } from "../lib/format";
 import type { ProductSort } from "../types";
@@ -37,7 +37,6 @@ export function Catalog() {
   const page = Math.max(Number(searchParams.get("page") ?? 1) || 1, 1);
 
   const { categories, categoryById } = useCategories();
-  const imagesByProduct = useProductImages();
 
   const [term, setTerm] = useState(urlSearch);
   const [syncedSearch, setSyncedSearch] = useState(urlSearch);
@@ -285,7 +284,7 @@ export function Catalog() {
                     key={product.id}
                     product={product}
                     categoryName={categoryById.get(product.category_id)?.name}
-                    image={imagesByProduct.get(product.id)?.[0]}
+                    image={activeImages(product)[0]}
                   />
                 ))}
               </div>

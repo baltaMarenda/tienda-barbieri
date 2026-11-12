@@ -26,6 +26,8 @@ export interface Product {
   stock_unit: SaleUnit;
   /** m² que trae cada caja; permite convertir entre caja y m². */
   m2_per_box: number | null;
+  /** Galería ordenada por `order`, incluidas las inactivas (ver `activeImages`). */
+  images?: ProductImage[];
 }
 
 export interface ProductListResponse {

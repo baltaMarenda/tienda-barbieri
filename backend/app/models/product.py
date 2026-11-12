@@ -19,7 +19,8 @@ class Product(Base):
     category_id = Column(
         Integer,
         ForeignKey("categories.id"),
-        nullable=False
+        nullable=False,
+        index=True,
     )
     category = relationship(
         "Category",
@@ -28,5 +29,6 @@ class Product(Base):
     images = relationship(
         "Image",
         back_populates="product",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        order_by="Image.order",
     )

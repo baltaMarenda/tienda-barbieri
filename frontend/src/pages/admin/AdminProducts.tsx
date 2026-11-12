@@ -89,7 +89,7 @@ function ImagePicker({
                 className="bb-image-picker__item"
                 data-removed={isRemoved || undefined}
               >
-                <img src={mediaUrl(image.url)} alt={image.alt} loading="lazy" decoding="async" />
+                <img src={mediaUrl(image.url, 300)} alt={image.alt} loading="lazy" decoding="async" />
                 {kept[0]?.id === image.id ? (
                   <span className="bb-image-picker__tag">Principal</span>
                 ) : null}

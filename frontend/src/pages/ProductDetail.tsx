@@ -7,9 +7,9 @@ import { StockBadge } from "../components/product/StockBadge";
 import { Alert, ProductGridSkeleton, TextSkeleton } from "../components/ui/Feedback";
 import { Icon } from "../components/ui/Icon";
 import { useCart } from "../hooks/useCart";
+import { activeImages } from "../api/images";
 import { useCategories } from "../hooks/useCategories";
 import { useProduct } from "../hooks/useProduct";
-import { useProductImages } from "../hooks/useProductImages";
 import { useProducts } from "../hooks/useProducts";
 import { mediaUrl } from "../api/client";
 import { formatNumber, formatPrice } from "../lib/format";
@@ -30,14 +30,13 @@ export function ProductDetail() {
 
 function ProductDetailView({ productId }: { productId: number }) {
   const { categoryById } = useCategories();
-  const imagesByProduct = useProductImages();
   const { add } = useCart();
   const { product, loading, notFound, error } = useProduct(productId);
 
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const images = imagesByProduct.get(productId) ?? [];
+  const images = activeImages(product);
   const category = product ? categoryById.get(product.category_id) : undefined;
   const terms = product ? saleTerms(product) : null;
 
@@ -107,7 +106,7 @@ function ProductDetailView({ productId }: { productId: number }) {
               <span className="bb-skeleton" style={{ display: "block", height: "100%" }} />
             ) : images.length > 0 ? (
               <img
-                src={images[activeImage] ? mediaUrl(images[activeImage].url) : undefined}
+                src={images[activeImage] ? mediaUrl(images[activeImage].url, 1200) : undefined}
                 alt={images[activeImage]?.alt || product?.name || ""}
                 decoding="async"
               />
@@ -129,7 +128,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                   aria-label={`Ver imagen ${index + 1} de ${images.length}: ${image.alt}`}
                   onClick={() => setActiveImage(index)}
                 >
-                  <img src={mediaUrl(image.url)} alt="" loading="lazy" decoding="async" />
+                  <img src={mediaUrl(image.url, 200)} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -346,7 +345,7 @@ function ProductDetailView({ productId }: { productId: number }) {
                   key={item.id}
                   product={item}
                   categoryName={categoryById.get(item.category_id)?.name}
-                  image={imagesByProduct.get(item.id)?.[0]}
+                  image={activeImages(item)[0]}
                 />
               ))}
             </div>

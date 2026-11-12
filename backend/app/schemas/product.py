@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 from fastapi import Query
 
+from app.schemas.image import ImageResponse
+
 # "unit": unidad, "box": caja, "m2": metro cuadrado (rubros cerámicos).
 SaleUnit = Literal["unit", "box", "m2"]
 
@@ -20,6 +22,9 @@ class ProductCreate(BaseModel):
 
 class ProductResponse(ProductCreate):
     id: int
+    # Galería ordenada por `order` (incluye inactivas: el front las filtra).
+    # Viene en la misma respuesta para no tener que pedir GET /images/ entero.
+    images: list[ImageResponse] = []
 
     class Config:
         from_attributes = True

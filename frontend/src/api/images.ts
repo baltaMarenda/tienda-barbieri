@@ -1,11 +1,10 @@
 import { request } from "./client";
-import type { ImagePayload, ProductImage } from "../types";
+import type { ImagePayload, Product, ProductImage } from "../types";
 
 /**
- * El backend no incluye las imágenes dentro de ProductResponse y `GET /images/`
- * no acepta filtro por producto, así que la única forma de resolver la galería
- * es traer el listado completo una vez y agruparlo en memoria. La promesa se
- * cachea para que una grilla de 12 tarjetas no dispare 12 requests iguales.
+ * Listado completo de imágenes: sólo lo usa el panel admin. La tienda lee la
+ * galería de `product.images`, que viene dentro de cada producto. La promesa se
+ * cachea para no repetir el pedido entre pantallas del panel.
  */
 let imagesCache: Promise<ProductImage[]> | null = null;
 
@@ -28,24 +27,11 @@ export function invalidateImagesCache(): void {
   imagesCache = null;
 }
 
-/** Agrupa por producto, descarta inactivas y ordena por el campo `order`. */
-export function groupActiveImages(
-  images: ProductImage[],
-): Map<number, ProductImage[]> {
-  const grouped = new Map<number, ProductImage[]>();
-
-  for (const image of images) {
-    if (!image.is_active) continue;
-    const list = grouped.get(image.product_id);
-    if (list) list.push(image);
-    else grouped.set(image.product_id, [image]);
-  }
-
-  for (const list of grouped.values()) {
-    list.sort((a, b) => a.order - b.order);
-  }
-
-  return grouped;
+/** Imágenes visibles de un producto, en el orden de la galería. */
+export function activeImages(product: Product | null | undefined): ProductImage[] {
+  return (product?.images ?? [])
+    .filter((image) => image.is_active)
+    .sort((a, b) => a.order - b.order);
 }
 
 export function createImage(payload: ImagePayload): Promise<ProductImage> {

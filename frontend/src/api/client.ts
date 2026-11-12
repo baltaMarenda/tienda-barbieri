@@ -138,8 +138,20 @@ export async function request<T>(
  * Las imágenes subidas se guardan en el backend y llegan como ruta relativa
  * ("/media/products/…"); las cargadas antes como link quedan absolutas.
  */
-export function mediaUrl(url: string): string {
-  return url.startsWith("/") ? `${API_URL}${url}` : url;
+export function mediaUrl(url: string, width?: number): string {
+  if (url.startsWith("/")) return `${API_URL}${url}`;
+  return width ? cloudinaryResize(url, width) : url;
+}
+
+const CLOUDINARY_UPLOAD = /^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)/;
+
+/**
+ * Cloudinary genera variantes al vuelo según la URL: se pide el ancho que
+ * realmente ocupa la imagen (en vez del original de hasta 1600px), con formato
+ * y calidad automáticos. Otros links quedan intactos.
+ */
+function cloudinaryResize(url: string, width: number): string {
+  return url.replace(CLOUDINARY_UPLOAD, `$1c_limit,w_${width},f_auto,q_auto/`);
 }
 
 /** Arma un query string omitiendo null, undefined y strings vacíos. */

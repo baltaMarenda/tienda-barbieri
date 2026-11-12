@@ -82,7 +82,7 @@ export function CartDrawer() {
                 <li key={line.productId} className="bb-cart-line">
                   <div className="bb-cart-line__media">
                     {line.imageUrl ? (
-                      <img src={mediaUrl(line.imageUrl)} alt="" loading="lazy" decoding="async" />
+                      <img src={mediaUrl(line.imageUrl, 160)} alt="" loading="lazy" decoding="async" />
                     ) : (
                       <span className="bb-media-empty">
                         <Icon name="image" size={18} />

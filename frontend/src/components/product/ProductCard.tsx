@@ -31,7 +31,7 @@ export function ProductCard({ product, categoryName, image }: ProductCardProps) 
         {image ? (
           <img
             className="bb-product-card__img"
-            src={mediaUrl(image.url)}
+            src={mediaUrl(image.url, 600)}
             alt=""
             loading="lazy"
             decoding="async"

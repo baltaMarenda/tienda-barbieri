@@ -1,0 +1,32 @@
+# Render (plan free) duerme el backend tras 15 min sin tráfico y el primer
+# request después tarda 30-60 s. Este ping lo mantiene despierto.
+#
+# Configurar una vez: Settings → Secrets and variables → Actions → Variables
+#   BACKEND_URL = https://tienda-barbieri-api.onrender.com  (sin barra final)
+#
+# GitHub no permite crons de menos de 5 min y a veces los demora; cada 10 min
+# deja margen antes de los 15 min de Render.
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping backend
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::warning::Falta la variable BACKEND_URL en el repo"
+            exit 0
+          fi
+          # "/" no toca la base: así Neon puede suspenderse y no se consumen
+          # sus horas de cómputo gratis (su arranque en frío es de ~1 s).
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+            --max-time 90 "$BACKEND_URL/"
