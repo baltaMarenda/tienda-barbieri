@@ -12,6 +12,7 @@ import { Contact } from "./pages/Contact";
 import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 import { ProductDetail } from "./pages/ProductDetail";
+import { Thanks } from "./pages/Thanks";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="productos" element={<Catalog />} />
         <Route path="productos/:id" element={<ProductDetail />} />
         <Route path="contacto" element={<Contact />} />
+        <Route path="gracias" element={<Thanks />} />
 
         <Route element={<RequireAdmin />}>
           <Route path="admin" element={<AdminLayout />}>

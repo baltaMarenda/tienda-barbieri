@@ -1343,3 +1343,21 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+/* --- Página de agradecimiento (/gracias) --------------------------------------- */
+
+.bb-thanks__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--success-50);
+  color: var(--success-600);
+}
+
+.bb-thanks__order {
+  margin: 0;
+  font-weight: 600;
+  color: var(--brand-700);
+}

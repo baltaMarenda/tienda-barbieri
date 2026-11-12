@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { createOrder } from "../../api/orders";
 import { useCart } from "../../hooks/useCart";
-import { useToast } from "../../hooks/useToast";
 import { formatPrice } from "../../lib/format";
 import {
   CARD_NOTE,
@@ -14,6 +14,7 @@ import {
   shippingFeeLabel,
 } from "../../lib/orders";
 import { whatsappOrderUrl } from "../../lib/whatsapp";
+import type { ThanksState } from "../../pages/Thanks";
 import type { PaymentMethod, ShippingMethod } from "../../types";
 import { Modal } from "../ui/Dialog";
 import { SelectField, TextareaField, TextField } from "../ui/Field";
@@ -30,7 +31,7 @@ interface FieldErrors {
 /** Se monta sólo mientras está abierto, así cada apertura arranca limpia. */
 export function CheckoutModal({ onClose }: { onClose: () => void }) {
   const { lines, total, clear } = useCart();
-  const { notify } = useToast();
+  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -93,9 +94,8 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
       });
       clear();
       onClose();
-      notify(`¡Recibimos tu pedido #${order.id}! Te llevamos a WhatsApp para enviarlo.`);
-      // Se navega en la misma pestaña: un window.open después del await lo bloquean los navegadores.
-      window.location.assign(url);
+      const state: ThanksState = { orderId: order.id, whatsappUrl: url };
+      navigate("/gracias", { state });
     } catch (cause: unknown) {
       setFormError(
         cause instanceof Error ? cause.message : "No pudimos enviar el pedido.",
@@ -126,7 +126,7 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
             disabled={saving || lines.length === 0}
           >
             {saving ? <Spinner /> : <Icon name="check-circle" size={18} />}
-            {saving ? "Enviando…" : `Enviar por WhatsApp · ${formatPrice(grandTotal)}`}
+            {saving ? "Enviando…" : `Confirmar pedido · ${formatPrice(grandTotal)}`}
           </button>
         </>
       }
